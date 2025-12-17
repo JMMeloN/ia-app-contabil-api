@@ -8,6 +8,7 @@ import companyRoutes from './routes/company.routes';
 import requestRoutes from './routes/request.routes';
 import userRoutes from './routes/user.routes';
 import uploadRoutes from './routes/upload.routes';
+import seedRoutes from './routes/seed.routes';
 
 const app = express();
 
@@ -24,6 +25,7 @@ app.use('/companies', companyRoutes);
 app.use('/requests', requestRoutes);
 app.use('/users', userRoutes);
 app.use('/upload', uploadRoutes);
+app.use('/seed', seedRoutes);
 
 // Health check
 app.get('/health', (req, res) => {
