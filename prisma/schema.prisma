@@ -1,0 +1,82 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// Enums
+enum UserRole {
+  CLIENTE
+  OPERACIONAL
+  ADMIN
+}
+
+enum RequestStatus {
+  PENDENTE
+  PROCESSADA
+  CANCELADA
+}
+
+// Models
+model User {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  password  String
+  name      String
+  role      UserRole @default(CLIENTE)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  companies Company[]
+  requests  Request[]
+
+  @@map("users")
+}
+
+model Company {
+  id        String   @id @default(uuid())
+  nome      String
+  cnpj      String   @unique
+  email     String
+  telefone  String
+  endereco  String
+  cidade    String
+  estado    String   @db.VarChar(2)
+  cep       String
+  userId    String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  requests Request[]
+
+  @@map("companies")
+}
+
+model Request {
+  id           String        @id @default(uuid())
+  valor        Float
+  dataEmissao  DateTime
+  observacoes  String?
+  status       RequestStatus @default(PENDENTE)
+  arquivoUrl   String?
+  userId       String
+  companyId    String
+  processadoEm DateTime?
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+
+  // Relations
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  @@map("requests")
+}
