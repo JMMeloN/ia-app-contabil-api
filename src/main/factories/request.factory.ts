@@ -4,11 +4,15 @@ import { DbUpdateRequestStatus } from '@/data/usecases/request/db-update-request
 import { DbCancelRequest } from '@/data/usecases/request/db-cancel-request.usecase';
 import { PrismaRequestRepository } from '@/infra/db/prisma/request.repository';
 import { PrismaCompanyRepository } from '@/infra/db/prisma/company.repository';
+import { PrismaUserRepository } from '@/infra/db/prisma/user.repository';
+import { EmailServiceFactory } from '@/main/factories/email/email-service-factory';
 
 export function makeCreateRequestUseCase() {
   const requestRepository = new PrismaRequestRepository();
   const companyRepository = new PrismaCompanyRepository();
-  return new DbCreateRequest(requestRepository, companyRepository);
+  const userRepository = new PrismaUserRepository();
+  const emailService = EmailServiceFactory.make();
+  return new DbCreateRequest(requestRepository, companyRepository, userRepository, emailService);
 }
 
 export function makeListRequestsUseCase() {
@@ -18,7 +22,10 @@ export function makeListRequestsUseCase() {
 
 export function makeUpdateRequestStatusUseCase() {
   const requestRepository = new PrismaRequestRepository();
-  return new DbUpdateRequestStatus(requestRepository);
+  const userRepository = new PrismaUserRepository();
+  const companyRepository = new PrismaCompanyRepository();
+  const emailService = EmailServiceFactory.make();
+  return new DbUpdateRequestStatus(requestRepository, userRepository, companyRepository, emailService);
 }
 
 export function makeCancelRequestUseCase() {

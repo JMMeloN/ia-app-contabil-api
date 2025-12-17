@@ -41,6 +41,7 @@
     "jsonwebtoken": "^9.0.3",
     "multer": "^2.0.2",
     "prisma": "^6.19.1",
+    "resend": "^6.6.0",
     "tsc-alias": "^1.8.16",
     "tsconfig-paths": "^4.2.0",
     "typescript": "^5.9.3",
