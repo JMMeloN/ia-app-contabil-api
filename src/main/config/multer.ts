@@ -1,24 +1,20 @@
 import multer from 'multer';
-import path from 'path';
-import fs from 'fs';
+import { CloudinaryStorage } from 'multer-storage-cloudinary';
+import cloudinary from './cloudinary';
 
-// Criar pasta uploads se não existir
-const uploadsDir = path.resolve(__dirname, '../../../uploads');
-if (!fs.existsSync(uploadsDir)) {
-  fs.mkdirSync(uploadsDir, { recursive: true });
-}
-
-// Configuração do storage
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    cb(null, uploadsDir);
-  },
-  filename: (req, file, cb) => {
-    // Gerar nome único: timestamp-randomstring-original.pdf
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
-    const ext = path.extname(file.originalname);
-    cb(null, `nota-${uniqueSuffix}${ext}`);
-  },
+// Configuração do storage com Cloudinary
+const storage = new CloudinaryStorage({
+  cloudinary: cloudinary,
+  params: {
+    folder: 'notas-fiscais', // Pasta no Cloudinary
+    allowed_formats: ['pdf'], // Apenas PDFs
+    resource_type: 'raw', // Para arquivos não-imagem (PDFs)
+    public_id: (req, file) => {
+      // Gerar nome único: nota-timestamp-randomstring
+      const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
+      return `nota-${uniqueSuffix}`;
+    },
+  } as any,
 });
 
 // Filtro para aceitar apenas PDFs
@@ -35,8 +31,6 @@ export const upload = multer({
   storage,
   fileFilter,
   limits: {
-    fileSize: 5 * 1024 * 1024, // 5MB
+    fileSize: 10 * 1024 * 1024, // 10MB
   },
 });
-
-export const uploadsPath = uploadsDir;

@@ -1,8 +1,7 @@
-import { Router, Request, Response } from 'express';
-import path from 'path';
+import { Router, Response } from 'express';
 import { authMiddleware, AuthRequest } from '@/main/middlewares/auth.middleware';
 import { roleMiddleware } from '@/main/middlewares/role.middleware';
-import { upload, uploadsPath } from '@/main/config/multer';
+import { upload } from '@/main/config/multer';
 import { makeUpdateRequestStatusUseCase } from '@/main/factories/request.factory';
 
 const router = Router();
@@ -24,8 +23,8 @@ router.post(
       const { requestId } = req.params;
       const updateStatusUseCase = makeUpdateRequestStatusUseCase();
 
-      // Construir URL do arquivo
-      const fileUrl = `${req.protocol}://${req.get('host')}/files/${req.file.filename}`;
+      // URL do arquivo no Cloudinary
+      const fileUrl = (req.file as any).path; // Cloudinary retorna a URL completa em 'path'
 
       // Atualizar status da solicitação para PROCESSADA com o arquivo
       const request = await updateStatusUseCase.execute({
@@ -43,22 +42,5 @@ router.post(
     }
   }
 );
-
-// GET /upload/files/:filename - Download de arquivo (autenticado)
-router.get('/files/:filename', async (req: Request, res: Response) => {
-  try {
-    const { filename } = req.params;
-    const filePath = path.join(uploadsPath, filename);
-
-    // Verificar se arquivo existe
-    return res.download(filePath, (err) => {
-      if (err) {
-        return res.status(404).json({ error: 'Arquivo não encontrado' });
-      }
-    });
-  } catch (error: any) {
-    return res.status(500).json({ error: error.message });
-  }
-});
 
 export default router;
