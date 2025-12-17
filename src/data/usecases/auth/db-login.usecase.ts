@@ -24,11 +24,10 @@ export class DbLogin implements LoginUseCase {
     }
 
     // Gerar token
-    const accessToken = jwt.sign(
-      { userId: user.id, email: user.email, role: user.role },
-      this.jwtSecret,
-      { expiresIn: this.jwtExpiresIn }
-    );
+    const payload = { userId: user.id, email: user.email, role: user.role };
+    const accessToken = jwt.sign(payload, this.jwtSecret, {
+      expiresIn: this.jwtExpiresIn
+    } as any);
 
     // Remover senha do retorno
     const { password, ...userWithoutPassword } = user;
