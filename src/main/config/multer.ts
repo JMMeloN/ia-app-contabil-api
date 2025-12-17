@@ -1,4 +1,5 @@
 import multer from 'multer';
+import { Request } from 'express';
 import { CloudinaryStorage } from 'multer-storage-cloudinary';
 import cloudinary from './cloudinary';
 
@@ -9,7 +10,7 @@ const storage = new CloudinaryStorage({
     folder: 'notas-fiscais', // Pasta no Cloudinary
     allowed_formats: ['pdf'], // Apenas PDFs
     resource_type: 'raw', // Para arquivos não-imagem (PDFs)
-    public_id: (req, file) => {
+    public_id: (req: Request, file: Express.Multer.File) => {
       // Gerar nome único: nota-timestamp-randomstring
       const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
       return `nota-${uniqueSuffix}`;
