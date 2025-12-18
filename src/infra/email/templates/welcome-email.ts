@@ -29,11 +29,6 @@ export const welcomeEmailTemplate = (userName: string) => `
       padding: 40px 20px;
       text-align: center;
     }
-    .logo {
-      max-width: 180px;
-      height: auto;
-      margin-bottom: 20px;
-    }
     .header-title {
       color: #ffffff;
       font-size: 24px;
@@ -120,8 +115,8 @@ export const welcomeEmailTemplate = (userName: string) => `
   <div class="email-container">
     <!-- Header -->
     <div class="header">
-      <img src="https://res.cloudinary.com/root/image/upload/v1/iacontabil/logo-white.png" alt="IAContabil" class="logo">
-      <h1 class="header-title">Bem-vindo ao IAContabil!</h1>
+      <h1 class="header-title" style="font-size: 32px; margin-bottom: 10px;">IAContabil</h1>
+      <p style="color: rgba(255,255,255,0.9); font-size: 18px; margin: 0;">Bem-vindo!</p>
     </div>
 
     <!-- Content -->
