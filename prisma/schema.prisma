@@ -43,7 +43,7 @@ model User {
 model Company {
   id        String   @id @default(uuid())
   nome      String
-  cnpj      String   @unique
+  cnpj      String
   email     String
   telefone  String
   endereco  String
@@ -58,6 +58,8 @@ model Company {
   user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   requests Request[]
 
+  // Constraint: Um usuário não pode cadastrar o mesmo CNPJ duas vezes
+  @@unique([userId, cnpj])
   @@map("companies")
 }
 
