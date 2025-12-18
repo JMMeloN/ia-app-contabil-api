@@ -3,7 +3,8 @@ import fs from 'fs';
 
 export interface EmailAttachment {
   filename: string;
-  path: string;
+  path?: string;
+  content?: Buffer;
 }
 
 export interface EmailData {
@@ -11,6 +12,10 @@ export interface EmailData {
   subject: string;
   html: string;
   attachments?: EmailAttachment[];
+}
+
+export interface EmailService {
+  send(data: EmailData): Promise<void>;
 }
 
 export interface EmailService {
@@ -30,7 +35,7 @@ export class ResendEmailService implements EmailService {
     try {
       const attachments = data.attachments?.map((att) => ({
         filename: att.filename,
-        content: fs.readFileSync(att.path),
+        content: att.content ?? (att.path ? fs.readFileSync(att.path) : Buffer.from('')),
       }));
 
       await this.resend.emails.send({

@@ -7,6 +7,7 @@ import { EmailService } from '@/infra/email/resend-email-service';
 import { notaProcessadaEmailTemplate } from '@/infra/email/templates/nota-processada-email';
 import { env } from '@/main/config/env';
 import path from 'path';
+import axios from 'axios';
 
 export class DbUpdateRequestStatus implements UpdateRequestStatusUseCase {
   constructor(
@@ -55,8 +56,18 @@ export class DbUpdateRequestStatus implements UpdateRequestStatusUseCase {
           : `http://localhost:${env.port}`;
         const downloadUrl = `${baseUrl}${data.arquivoUrl}`;
 
-        // Caminho do arquivo no servidor
-        const filePath = path.resolve(__dirname, '../../../..', data.arquivoUrl.replace('/files/', 'uploads/'));
+        // Preparar anexo (suporta URL remota ou arquivo local)
+        let attachmentContent: Buffer | undefined;
+        let attachmentPath: string | undefined;
+
+        if (data.arquivoUrl.startsWith('http')) {
+          // Baixar arquivo do Cloudinary ou servidor remoto
+          const response = await axios.get(data.arquivoUrl, { responseType: 'arraybuffer' });
+          attachmentContent = Buffer.from(response.data);
+        } else {
+          // Arquivo local
+          attachmentPath = path.resolve(__dirname, '../../../..', data.arquivoUrl.replace('/files/', 'uploads/'));
+        }
 
         // Enviar email com anexo
         await this.emailService.send({
@@ -72,7 +83,8 @@ export class DbUpdateRequestStatus implements UpdateRequestStatusUseCase {
           attachments: [
             {
               filename: `${notaNumero}.pdf`,
-              path: filePath,
+              content: attachmentContent,
+              path: attachmentPath,
             },
           ],
         });
