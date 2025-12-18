@@ -17,11 +17,11 @@ export class DbUpdateCompany implements UpdateCompanyUseCase {
       throw new Error('Você não tem permissão para editar esta empresa');
     }
 
-    // Se estiver alterando o CNPJ, verificar se já existe
+    // Se estiver alterando o CNPJ, verificar se o usuário já tem outra empresa com este CNPJ
     if (data.cnpj && data.cnpj !== company.cnpj) {
-      const existingCompany = await this.companyRepository.findByCnpj(data.cnpj);
+      const existingCompany = await this.companyRepository.findByUserIdAndCnpj(data.userId, data.cnpj);
       if (existingCompany) {
-        throw new Error('CNPJ já cadastrado');
+        throw new Error('Você já cadastrou uma empresa com este CNPJ');
       }
     }
 

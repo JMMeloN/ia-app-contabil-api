@@ -28,9 +28,14 @@ export class PrismaCompanyRepository implements CompanyRepository {
     return company;
   }
 
-  async findByCnpj(cnpj: string): Promise<CompanyModel | null> {
+  async findByUserIdAndCnpj(userId: string, cnpj: string): Promise<CompanyModel | null> {
     const company = await prisma.company.findUnique({
-      where: { cnpj },
+      where: {
+        userId_cnpj: {
+          userId,
+          cnpj,
+        },
+      },
     });
 
     return company;

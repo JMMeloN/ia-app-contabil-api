@@ -27,7 +27,7 @@ export interface CompanyRepository {
   create(data: CreateCompanyData): Promise<CompanyModel>;
   findByUserId(userId: string): Promise<CompanyModel[]>;
   findById(id: string): Promise<CompanyModel | null>;
-  findByCnpj(cnpj: string): Promise<CompanyModel | null>;
+  findByUserIdAndCnpj(userId: string, cnpj: string): Promise<CompanyModel | null>;
   update(id: string, data: UpdateCompanyData): Promise<CompanyModel>;
   delete(id: string): Promise<void>;
 }

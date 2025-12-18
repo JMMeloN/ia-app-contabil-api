@@ -6,10 +6,10 @@ export class DbCreateCompany implements CreateCompanyUseCase {
   constructor(private readonly companyRepository: CompanyRepository) {}
 
   async execute(data: CreateCompanyDTO): Promise<CompanyModel> {
-    // Verificar se CNPJ já existe
-    const existingCompany = await this.companyRepository.findByCnpj(data.cnpj);
+    // Verificar se o usuário já cadastrou este CNPJ
+    const existingCompany = await this.companyRepository.findByUserIdAndCnpj(data.userId, data.cnpj);
     if (existingCompany) {
-      throw new Error('CNPJ já cadastrado');
+      throw new Error('Você já cadastrou uma empresa com este CNPJ');
     }
 
     // Criar empresa
