@@ -39,13 +39,18 @@ export class DbUpdateRequestStatus implements UpdateRequestStatusUseCase {
     // Se foi processada, enviar email para o usuário com a nota em anexo
     if (data.status === 'PROCESSADA' && data.arquivoUrl) {
       try {
+        console.log('📧 Iniciando envio de email para nota processada. arquivoUrl:', data.arquivoUrl);
+
         // Buscar dados do usuário e empresa
         const user = await this.userRepository.findById(request.userId);
         const company = await this.companyRepository.findById(request.companyId);
 
         if (!user || !company) {
+          console.error('❌ Usuário ou empresa não encontrados:', { userId: request.userId, companyId: request.companyId });
           throw new Error('Dados não encontrados para envio de email');
         }
+
+        console.log('✅ Usuário e empresa encontrados:', { userEmail: user.email, companyName: company.nome });
 
         // Gerar número da nota (baseado no ID)
         const notaNumero = `NF-${request.id.substring(0, 8).toUpperCase()}`;
@@ -56,18 +61,26 @@ export class DbUpdateRequestStatus implements UpdateRequestStatusUseCase {
           : `http://localhost:${env.port}`;
         const downloadUrl = `${baseUrl}${data.arquivoUrl}`;
 
+        console.log('🔗 Download URL:', downloadUrl);
+
         // Preparar anexo (suporta URL remota ou arquivo local)
         let attachmentContent: Buffer | undefined;
         let attachmentPath: string | undefined;
 
         if (data.arquivoUrl.startsWith('http')) {
+          console.log('📥 Baixando arquivo do Cloudinary...');
           // Baixar arquivo do Cloudinary ou servidor remoto
           const response = await axios.get(data.arquivoUrl, { responseType: 'arraybuffer' });
           attachmentContent = Buffer.from(response.data);
+          console.log('✅ Arquivo baixado com sucesso. Tamanho:', attachmentContent.length, 'bytes');
         } else {
+          console.log('📂 Usando arquivo local');
           // Arquivo local
           attachmentPath = path.resolve(__dirname, '../../../..', data.arquivoUrl.replace('/files/', 'uploads/'));
+          console.log('📂 Caminho local:', attachmentPath);
         }
+
+        console.log('📤 Enviando email com anexo...');
 
         // Enviar email com anexo
         await this.emailService.send({
@@ -88,8 +101,10 @@ export class DbUpdateRequestStatus implements UpdateRequestStatusUseCase {
             },
           ],
         });
+
+        console.log('✅ Email enviado com sucesso para:', user.email);
       } catch (error) {
-        console.error('Erro ao enviar email de nota processada:', error);
+        console.error('❌ Erro ao enviar email de nota processada:', error);
         // Não quebra o fluxo se o email falhar
       }
     }
