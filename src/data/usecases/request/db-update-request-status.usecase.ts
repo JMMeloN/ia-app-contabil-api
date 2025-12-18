@@ -56,10 +56,12 @@ export class DbUpdateRequestStatus implements UpdateRequestStatusUseCase {
         const notaNumero = `NF-${request.id.substring(0, 8).toUpperCase()}`;
 
         // URL completo para download
-        const baseUrl = env.nodeEnv === 'production'
-          ? 'https://iacontabil-api.onrender.com'
-          : `http://localhost:${env.port}`;
-        const downloadUrl = `${baseUrl}${data.arquivoUrl}`;
+        // Se arquivoUrl já é completo (Cloudinary), usar diretamente
+        const downloadUrl = data.arquivoUrl.startsWith('http')
+          ? data.arquivoUrl
+          : `${env.nodeEnv === 'production'
+              ? 'https://iacontabil-api.onrender.com'
+              : `http://localhost:${env.port}`}${data.arquivoUrl}`;
 
         console.log('🔗 Download URL:', downloadUrl);
 
@@ -68,11 +70,21 @@ export class DbUpdateRequestStatus implements UpdateRequestStatusUseCase {
         let attachmentPath: string | undefined;
 
         if (data.arquivoUrl.startsWith('http')) {
-          console.log('📥 Baixando arquivo do Cloudinary...');
-          // Baixar arquivo do Cloudinary ou servidor remoto
-          const response = await axios.get(data.arquivoUrl, { responseType: 'arraybuffer' });
-          attachmentContent = Buffer.from(response.data);
-          console.log('✅ Arquivo baixado com sucesso. Tamanho:', attachmentContent.length, 'bytes');
+          console.log('📥 Baixando arquivo do Cloudinary...', data.arquivoUrl);
+          try {
+            // Baixar arquivo do Cloudinary ou servidor remoto com timeout
+            const response = await axios.get(data.arquivoUrl, {
+              responseType: 'arraybuffer',
+              timeout: 30000, // 30 segundos
+              maxContentLength: 10 * 1024 * 1024, // 10MB max
+            });
+            attachmentContent = Buffer.from(response.data);
+            console.log('✅ Arquivo baixado com sucesso. Tamanho:', attachmentContent.length, 'bytes');
+          } catch (downloadError: any) {
+            console.error('❌ Erro ao baixar arquivo do Cloudinary:', downloadError.message);
+            console.error('❌ URL:', data.arquivoUrl);
+            throw new Error(`Falha ao baixar arquivo: ${downloadError.message}`);
+          }
         } else {
           console.log('📂 Usando arquivo local');
           // Arquivo local
@@ -103,8 +115,11 @@ export class DbUpdateRequestStatus implements UpdateRequestStatusUseCase {
         });
 
         console.log('✅ Email enviado com sucesso para:', user.email);
-      } catch (error) {
+      } catch (error: any) {
         console.error('❌ Erro ao enviar email de nota processada:', error);
+        console.error('❌ Stack trace:', error?.stack);
+        console.error('❌ Error message:', error?.message);
+        console.error('❌ Error details:', JSON.stringify(error, null, 2));
         // Não quebra o fluxo se o email falhar
       }
     }
