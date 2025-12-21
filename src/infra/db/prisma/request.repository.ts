@@ -19,6 +19,22 @@ export class PrismaRequestRepository implements RequestRepository {
   async findById(id: string): Promise<RequestModel | null> {
     const request = await prisma.request.findUnique({
       where: { id },
+      include: {
+        company: {
+          select: {
+            id: true,
+            nome: true,
+            cnpj: true,
+          },
+        },
+        user: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+          },
+        },
+      },
     });
 
     return request;

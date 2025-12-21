@@ -5,6 +5,7 @@ import { roleMiddleware } from '@/main/middlewares/role.middleware';
 import {
   makeCreateRequestUseCase,
   makeListRequestsUseCase,
+  makeGetRequestByIdUseCase,
   makeUpdateRequestStatusUseCase,
   makeCancelRequestUseCase,
 } from '@/main/factories/request.factory';
@@ -44,6 +45,23 @@ router.get('/', async (req: AuthRequest, res: Response) => {
     return res.status(200).json(requests);
   } catch (error: any) {
     return res.status(500).json({ error: error.message });
+  }
+});
+
+// GET /requests/:id - Buscar solicitação por ID
+router.get('/:id', async (req: AuthRequest, res: Response) => {
+  try {
+    const { id } = req.params;
+    const getRequestByIdUseCase = makeGetRequestByIdUseCase();
+
+    // Se for cliente, só pode ver suas próprias solicitações
+    const userId = req.user!.role === 'CLIENTE' ? req.user!.userId : undefined;
+
+    const request = await getRequestByIdUseCase.execute(id, userId);
+
+    return res.status(200).json(request);
+  } catch (error: any) {
+    return res.status(400).json({ error: error.message });
   }
 });
 
