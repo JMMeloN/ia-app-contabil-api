@@ -11,4 +11,6 @@ export const env = {
   corsOrigin: process.env.CORS_ORIGIN || 'http://localhost:3000',
   resendApiKey: process.env.RESEND_API_KEY || '',
   resendFromEmail: process.env.RESEND_FROM_EMAIL || 'onboarding@resend.dev',
+  nfeioApiKey: process.env.NFEIO_API_KEY || '',
+  nfeioCompanyId: process.env.NFEIO_COMPANY_ID || '',
 };

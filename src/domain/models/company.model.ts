@@ -9,6 +9,8 @@ export interface CompanyModel {
   estado: string;
   cep: string;
   userId: string;
+  nfeioCompanyId?: string | null;
+  cityServiceCode?: string | null;
   createdAt: Date;
   updatedAt: Date;
 }

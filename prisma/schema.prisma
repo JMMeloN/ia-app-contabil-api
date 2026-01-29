@@ -41,18 +41,21 @@ model User {
 }
 
 model Company {
-  id        String   @id @default(uuid())
-  nome      String
-  cnpj      String
-  email     String
-  telefone  String
-  endereco  String
-  cidade    String
-  estado    String   @db.VarChar(2)
-  cep       String
-  userId    String
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id              String   @id @default(uuid())
+  nome            String
+  cnpj            String
+  email           String
+  telefone        String
+  endereco        String
+  cidade          String
+  estado          String   @db.VarChar(2)
+  cep             String
+  userId          String
+  // Campos para integração NFe.io (configurados pelo operacional)
+  nfeioCompanyId  String?  // ID da empresa no nfe.io
+  cityServiceCode String?  // Código do serviço municipal
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
 
   // Relations
   user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -64,17 +67,18 @@ model Company {
 }
 
 model Request {
-  id           String        @id @default(uuid())
-  valor        Float
-  dataEmissao  DateTime
-  observacoes  String?
-  status       RequestStatus @default(PENDENTE)
-  arquivoUrl   String?
-  userId       String
-  companyId    String
-  processadoEm DateTime?
-  createdAt    DateTime      @default(now())
-  updatedAt    DateTime      @updatedAt
+  id              String        @id @default(uuid())
+  valor           Float
+  dataEmissao     DateTime
+  observacoes     String?
+  status          RequestStatus @default(PENDENTE)
+  arquivoUrl      String?
+  userId          String
+  companyId       String
+  processadoEm    DateTime?
+  emissaoAutomatica Boolean     @default(false) // true = cliente emite automaticamente, false = IAContabil emite
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
 
   // Relations
   user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)

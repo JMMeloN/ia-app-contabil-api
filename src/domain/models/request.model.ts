@@ -10,6 +10,7 @@ export interface RequestModel {
   userId: string;
   companyId: string;
   processadoEm?: Date | null;
+  emissaoAutomatica: boolean;
   createdAt: Date;
   updatedAt: Date;
 }

@@ -6,6 +6,7 @@ export interface CreateRequestDTO {
   observacoes?: string;
   userId: string;
   companyId: string;
+  emissaoAutomatica?: boolean;
 }
 
 export interface CreateRequestUseCase {

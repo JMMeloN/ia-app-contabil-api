@@ -8,6 +8,7 @@ import {
   makeGetRequestByIdUseCase,
   makeUpdateRequestStatusUseCase,
   makeCancelRequestUseCase,
+  makeEmitInvoiceUseCase,
 } from '@/main/factories/request.factory';
 
 const router = Router();
@@ -21,11 +22,16 @@ const createRequestSchema = z.object({
   dataEmissao: z.string().transform((str) => new Date(str)),
   observacoes: z.string().optional(),
   companyId: z.string().uuid('ID da empresa inválido'),
+  emissaoAutomatica: z.boolean().optional().default(false),
 });
 
 const updateStatusSchema = z.object({
   status: z.enum(['PENDENTE', 'PROCESSADA', 'CANCELADA']),
   arquivoUrl: z.string().url().optional(),
+});
+
+const emitInvoiceSchema = z.object({
+  cityServiceCode: z.string().min(1, 'Código do serviço é obrigatório'),
 });
 
 // GET /requests - Listar solicitações
@@ -123,5 +129,34 @@ router.delete('/:id/cancel', roleMiddleware(['CLIENTE']), async (req: AuthReques
     return res.status(400).json({ error: error.message });
   }
 });
+
+// POST /requests/:id/emit-invoice - Emitir nota fiscal (operacional e admin)
+router.post(
+  '/:id/emit-invoice',
+  roleMiddleware(['OPERACIONAL', 'ADMIN']),
+  async (req: AuthRequest, res: Response) => {
+    try {
+      const { id } = req.params;
+      const data = emitInvoiceSchema.parse(req.body);
+      const emitInvoiceUseCase = makeEmitInvoiceUseCase();
+
+      const request = await emitInvoiceUseCase.execute({
+        requestId: id,
+        userId: req.user!.userId,
+        cityServiceCode: data.cityServiceCode,
+      });
+
+      return res.status(200).json({
+        message: 'Nota fiscal emitida com sucesso',
+        request,
+      });
+    } catch (error: any) {
+      if (error.name === 'ZodError') {
+        return res.status(400).json({ error: 'Dados inválidos', details: error.errors });
+      }
+      return res.status(400).json({ error: error.message });
+    }
+  }
+);
 
 export default router;
