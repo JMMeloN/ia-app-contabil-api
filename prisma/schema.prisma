@@ -43,17 +43,43 @@ model User {
 model Company {
   id              String   @id @default(uuid())
   nome            String
+  nomeFantasia    String?
   cnpj            String
   email           String
   telefone        String
-  endereco        String
+  endereco        String   // Campo legado (string completa)
+  rua             String?
+  numero          String?
+  bairro          String?
+  complemento     String?
   cidade          String
   estado          String   @db.VarChar(2)
   cep             String
+  dataAbertura    DateTime?
+  regimeTributario String?
+  naturezaJuridica String?
+  inscricaoMunicipal String?
+  inscricaoEstadual  String?
   userId          String
-  // Campos para integração NFe.io (configurados pelo operacional)
-  nfeioCompanyId  String?  // ID da empresa no nfe.io
-  cityServiceCode String?  // Código do serviço municipal
+  
+  // Campos técnicos avançados NFe.io
+  regimeEspecialTributacao    String?  // specialTaxRegime
+  numeroJuntaComercial        BigInt?  // companyRegistryNumber
+  rpsSerie                    String?  // rpsSerialNumber
+  rpsNumero                   BigInt?  // rpsNumber
+  aliquotaIss                 Float?   // issRate
+  determinacaoImpostoFederal  String?  // federalTaxDetermination
+  determinacaoImpostoMunicipal String? // municipalTaxDetermination
+  prefeituraLogin             String?  // loginName
+  prefeituraSenha             String?  // loginPassword
+  valorAutorizacao            String?  // authIssueValue
+  
+  // Integração e Status
+  nfeioCompanyId  String?  @unique
+  cityServiceCode String?
+  statusFiscal    String?
+  ambiente        String?  @default("Development")
+  
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 
@@ -75,8 +101,17 @@ model Request {
   arquivoUrl      String?
   userId          String
   companyId       String
+  
+  // Dados do Tomador (quem recebe a nota)
+  tomadorNome      String?
+  tomadorDocumento String? // CPF ou CNPJ
+  tomadorEmail     String?
+  
+  // Integração NFe.io
+  nfeioInvoiceId   String?  // ID da nota no nfe.io
+  
   processadoEm    DateTime?
-  emissaoAutomatica Boolean     @default(false) // true = cliente emite automaticamente, false = IAContabil emite
+  emissaoAutomatica Boolean     @default(false)
   createdAt       DateTime      @default(now())
   updatedAt       DateTime      @updatedAt
 

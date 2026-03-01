@@ -13,4 +13,5 @@ export const env = {
   resendFromEmail: process.env.RESEND_FROM_EMAIL || 'onboarding@resend.dev',
   nfeioApiKey: process.env.NFEIO_API_KEY || '',
   nfeioCompanyId: process.env.NFEIO_COMPANY_ID || '',
+  nfeioBaseUrl: process.env.NFEIO_BASE_URL || 'https://api.nfe.io/v1',
 };

@@ -7,6 +7,10 @@ export interface CreateRequestDTO {
   userId: string;
   companyId: string;
   emissaoAutomatica?: boolean;
+  // Novos campos do Tomador
+  tomadorNome?: string;
+  tomadorDocumento?: string;
+  tomadorEmail?: string;
 }
 
 export interface CreateRequestUseCase {

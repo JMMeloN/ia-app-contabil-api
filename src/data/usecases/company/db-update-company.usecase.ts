@@ -1,9 +1,13 @@
 import { UpdateCompanyUseCase, UpdateCompanyDTO } from '@/domain/usecases/company/update-company.usecase';
 import { CompanyModel } from '@/domain/models/company.model';
-import { CompanyRepository } from '@/data/protocols/company.repository';
+import { CompanyRepository, UpdateCompanyData } from '@/data/protocols/company.repository';
+import { NFEIOServiceProtocol } from '@/data/protocols/nfeio.service';
 
 export class DbUpdateCompany implements UpdateCompanyUseCase {
-  constructor(private readonly companyRepository: CompanyRepository) {}
+  constructor(
+    private readonly companyRepository: CompanyRepository,
+    private readonly nfeioService: NFEIOServiceProtocol
+  ) {}
 
   async execute(data: UpdateCompanyDTO): Promise<CompanyModel> {
     // Verificar se a empresa existe
@@ -25,10 +29,38 @@ export class DbUpdateCompany implements UpdateCompanyUseCase {
       }
     }
 
-    // Remover userId do data
-    const { userId, id, ...updateData } = data;
+    // Tentar atualizar no NFe.io se tiver nfeioCompanyId
+    if (company.nfeioCompanyId) {
+      try {
+        await this.nfeioService.updateCompany(company.nfeioCompanyId, {
+          name: data.nome || company.nome,
+          federalTaxNumber: Number((data.cnpj || company.cnpj).replace(/\D/g, '')),
+          email: data.email || company.email,
+          address: {
+            postalCode: (data.cep || company.cep).replace(/\D/g, ''),
+            street: (data.endereco || company.endereco).split(',')[0],
+            number: (data.endereco || company.endereco).split(',')[1]?.trim() || 'S/N',
+            district: 'Centro',
+            city: {
+              code: '3550308',
+              name: data.cidade || company.cidade
+            },
+            state: data.estado || company.estado
+          },
+          taxRegime: data.taxRegime || 'Isento',
+          legalNature: data.legalNature || 'EmpresaIndividualImobiliaria',
+          environment: 'Development'
+        });
+      } catch (error: any) {
+        console.error('Falha ao atualizar empresa no NFe.io:', error.message);
+      }
+    }
 
-    // Atualizar empresa
+    // Preparar dados para o repositório
+    const { userId, id, ...updateDTO } = data;
+    const updateData: UpdateCompanyData = { ...updateDTO };
+
+    // Atualizar empresa no banco local
     const updatedCompany = await this.companyRepository.update(data.id, updateData);
 
     return updatedCompany;

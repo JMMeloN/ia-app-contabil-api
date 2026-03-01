@@ -23,6 +23,10 @@ const createRequestSchema = z.object({
   observacoes: z.string().optional(),
   companyId: z.string().uuid('ID da empresa inválido'),
   emissaoAutomatica: z.boolean().optional().default(false),
+  // Novos campos do Tomador
+  tomadorNome: z.string().optional(),
+  tomadorDocumento: z.string().optional(),
+  tomadorEmail: z.string().email('Email do tomador inválido').optional().or(z.literal('')),
 });
 
 const updateStatusSchema = z.object({

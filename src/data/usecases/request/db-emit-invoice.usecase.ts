@@ -3,7 +3,7 @@ import { RequestModel } from '@/domain/models/request.model';
 import { RequestRepository } from '@/data/protocols/request.repository';
 import { CompanyRepository } from '@/data/protocols/company.repository';
 import { UserRepository } from '@/data/protocols/user.repository';
-import { NFEIOService, NFEIOBorrower } from '@/infra/nfeio/nfeio.service';
+import { NFEIOServiceProtocol } from '@/data/protocols/nfeio.service';
 import { EmailService } from '@/infra/email/resend-email-service';
 import { notaProcessadaEmailTemplate } from '@/infra/email/templates/nota-processada-email';
 
@@ -12,7 +12,7 @@ export class DbEmitInvoice implements EmitInvoiceUseCase {
     private readonly requestRepository: RequestRepository,
     private readonly companyRepository: CompanyRepository,
     private readonly userRepository: UserRepository,
-    private readonly nfeioService: NFEIOService,
+    private readonly nfeioService: NFEIOServiceProtocol,
     private readonly emailService: EmailService
   ) {}
 
@@ -23,67 +23,69 @@ export class DbEmitInvoice implements EmitInvoiceUseCase {
       throw new Error('Solicitação não encontrada');
     }
 
-    // 2. Verificar status (só pode emitir se estiver PENDENTE ou PROCESSADA sem nota)
     if (request.status === 'CANCELADA') {
       throw new Error('Não é possível emitir nota para solicitação cancelada');
     }
 
-    // 3. Buscar dados da empresa
+    // 2. Buscar dados da empresa (Emissora)
     const company = await this.companyRepository.findById(request.companyId);
     if (!company) {
       throw new Error('Empresa não encontrada');
     }
 
-    // 4. Buscar dados do usuário (cliente que solicitou)
+    if (!company.nfeioCompanyId) {
+      throw new Error('Empresa não vinculada ao NFe.io. Vincule-a primeiro.');
+    }
+
+    // 3. Buscar dados do usuário (Dono da conta)
     const user = await this.userRepository.findById(request.userId);
     if (!user) {
       throw new Error('Usuário não encontrado');
     }
 
-    // 5. Montar dados do tomador (borrower) - Cliente que vai receber a nota
-    const borrower: NFEIOBorrower = {
-      type: 'LegalEntity', // Pessoa Jurídica
-      federalTaxNumber: parseInt(company.cnpj.replace(/\D/g, '')), // CNPJ apenas números
-      name: company.nome,
-      email: company.email,
-      address: {
-        country: 'BRA',
-        postalCode: company.cep.replace(/\D/g, ''),
-        street: company.endereco,
-        number: 'S/N', // Você pode extrair do endereço se necessário
-        district: 'Centro', // Você pode adicionar este campo ao modelo Company
-        city: {
-          code: '0000000', // Código IBGE - você precisará mapear ou buscar
-          name: company.cidade,
-        },
-        state: company.estado,
-      },
+    // 4. Montar dados do tomador (borrower)
+    // Se a solicitação tiver dados do tomador, usa eles. Senão, fallback (exemplo simples)
+    const borrower = {
+      type: (request.tomadorDocumento?.replace(/\D/g, '').length || 0) > 11 ? 'LegalEntity' : 'NaturalPerson' as any,
+      federalTaxNumber: request.tomadorDocumento ? parseInt(request.tomadorDocumento.replace(/\D/g, '')) : parseInt(company.cnpj.replace(/\D/g, '')),
+      name: request.tomadorNome || company.nome,
+      email: request.tomadorEmail || company.email,
     };
 
-    // 6. Emitir nota fiscal via nfe.io
+    // 5. Emitir nota fiscal via nfe.io
+    // Nota: O nfeioService agora precisa saber qual empresa está emitindo se não for a padrão
+    // No NFEIOService, a URL de emissão usa o companyId na rota
     let invoice;
     try {
+      // Criamos uma instância específica para esta empresa ou passamos o ID na chamada
+      // Como o protocolo é genérico, vamos assumir que o nfeioService lida com o ID da empresa emissora internamente 
+      // ou que precisamos de um método que aceite o emissorId
+      
+      // Ajustando para o novo mapeamento de campos
       invoice = await this.nfeioService.emitServiceInvoice({
-        cityServiceCode: data.cityServiceCode,
-        description: request.observacoes || 'Serviços de consultoria contábil',
+        companyId: company.nfeioCompanyId,
+        cityServiceCode: data.cityServiceCode || company.cityServiceCode || '0',
+        description: request.observacoes || 'Serviços prestados',
         servicesAmount: request.valor,
         borrower,
       });
 
-      console.log('Nota fiscal emitida com sucesso:', invoice);
+      console.log('Nota fiscal enviada para processamento no NFe.io:', invoice);
     } catch (error: any) {
-      console.error('Erro ao emitir nota fiscal:', error);
+      console.error('Erro ao emitir nota fiscal:', error.message);
       throw new Error(`Falha ao emitir nota fiscal: ${error.message}`);
     }
 
-    // 7. Atualizar solicitação com dados da nota fiscal
+    // 6. Atualizar solicitação com o ID da nota no NFe.io e status inicial
+    const nfeioId = (invoice as any).id || (invoice as any).companies?.id;
+    
     const updatedRequest = await this.requestRepository.updateStatus(data.requestId, {
       status: 'PROCESSADA',
-      arquivoUrl: invoice.pdfUrl || invoice.xmlUrl || undefined,
+      arquivoUrl: (invoice as any).pdfUrl || undefined,
       processadoEm: new Date(),
     });
 
-    // 8. Enviar email para o cliente notificando que a nota foi emitida
+    // 7. Enviar email para o cliente
     try {
       await this.emailService.send({
         to: user.email,
@@ -92,15 +94,12 @@ export class DbEmitInvoice implements EmitInvoiceUseCase {
           user.name,
           company.nome,
           request.valor,
-          invoice.number || 'Em processamento',
-          invoice.pdfUrl || '#'
+          (invoice as any).number || 'Em processamento',
+          (invoice as any).pdfUrl || '#'
         ),
       });
-
-      console.log('Email enviado para o cliente:', user.email);
     } catch (error) {
       console.error('Erro ao enviar email para cliente:', error);
-      // Não quebra o fluxo se o email falhar
     }
 
     return updatedRequest;

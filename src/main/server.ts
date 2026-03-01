@@ -13,7 +13,14 @@ import seedRoutes from './routes/seed.routes';
 const app = express();
 
 // Middlewares
-app.use(cors({ origin: env.corsOrigin }));
+app.use(
+  cors({
+    origin: env.corsOrigin,
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+    credentials: true,
+  }),
+);
 app.use(express.json());
 
 // Static files (uploads)

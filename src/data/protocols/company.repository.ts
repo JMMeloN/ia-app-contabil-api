@@ -10,6 +10,8 @@ export interface CreateCompanyData {
   estado: string;
   cep: string;
   userId: string;
+  nfeioCompanyId?: string;
+  cityServiceCode?: string;
 }
 
 export interface UpdateCompanyData {
@@ -21,6 +23,8 @@ export interface UpdateCompanyData {
   cidade?: string;
   estado?: string;
   cep?: string;
+  nfeioCompanyId?: string;
+  cityServiceCode?: string;
 }
 
 export interface CompanyRepository {

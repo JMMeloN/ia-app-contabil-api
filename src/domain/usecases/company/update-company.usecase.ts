@@ -10,7 +10,11 @@ export interface UpdateCompanyDTO {
   cidade?: string;
   estado?: string;
   cep?: string;
-  userId: string; // Para validar propriedade
+  userId: string;
+  // Campos opcionais para integração NFe.io
+  cityServiceCode?: string;
+  taxRegime?: string;
+  legalNature?: string;
 }
 
 export interface UpdateCompanyUseCase {

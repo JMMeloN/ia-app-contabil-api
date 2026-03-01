@@ -34,33 +34,33 @@ export class DbCreateRequest implements CreateRequestUseCase {
       throw new Error('Usuário não encontrado');
     }
 
-    // Criar solicitação
+    // Criar solicitação no banco local
     const request = await this.requestRepository.create(data);
 
     // Se emissão automática estiver habilitada E a empresa tiver configuração NFe.io
-    if (data.emissaoAutomatica && company.nfeioCompanyId && company.cityServiceCode) {
+    if (data.emissaoAutomatica && company.nfeioCompanyId && (company.cityServiceCode || data.tomadorNome)) {
       try {
         console.log('Emitindo nota automaticamente para:', company.nome);
 
-        // Emitir nota fiscal automaticamente
-        const nfeioService = new NFEIOService(undefined, company.nfeioCompanyId);
+        // Usar dados do tomador informados ou fallback para a própria empresa (se for o caso)
+        const borrower = {
+          type: (data.tomadorDocumento?.replace(/\D/g, '').length || 0) > 11 ? 'LegalEntity' : 'NaturalPerson',
+          federalTaxNumber: data.tomadorDocumento ? parseInt(data.tomadorDocumento.replace(/\D/g, '')) : parseInt(company.cnpj.replace(/\D/g, '')),
+          name: data.tomadorNome || company.nome,
+          email: data.tomadorEmail || company.email,
+        };
 
-        const invoice = await nfeioService.emitServiceInvoice({
-          cityServiceCode: company.cityServiceCode,
+        const invoice = await this.nfeioService.emitServiceInvoice({
+          cityServiceCode: company.cityServiceCode || '0',
           description: data.observacoes || 'Serviços prestados',
           servicesAmount: data.valor,
-          borrower: {
-            type: 'LegalEntity',
-            federalTaxNumber: parseInt(company.cnpj.replace(/\D/g, '')),
-            name: company.nome,
-            email: company.email,
-          },
+          borrower,
         });
 
         // Atualizar solicitação com dados da nota
         await this.requestRepository.updateStatus(request.id, {
           status: 'PROCESSADA',
-          arquivoUrl: invoice.pdfUrl || invoice.xmlUrl || undefined,
+          arquivoUrl: (invoice as any).pdfUrl || (invoice as any).xmlUrl || undefined,
           processadoEm: new Date(),
         });
 
@@ -72,8 +72,8 @@ export class DbCreateRequest implements CreateRequestUseCase {
             user.name,
             company.nome,
             data.valor,
-            invoice.number || 'Em processamento',
-            invoice.pdfUrl || '#'
+            (invoice as any).number || 'Em processamento',
+            (invoice as any).pdfUrl || '#'
           ),
         });
 
@@ -81,45 +81,33 @@ export class DbCreateRequest implements CreateRequestUseCase {
       } catch (error) {
         console.error('Erro ao emitir nota automaticamente:', error);
         // Se falhar emissão automática, envia email para admin processar manualmente
-        try {
-          await this.emailService.send({
-            to: 'iaappcontabil@gmail.com',
-            subject: `⚠️ Falha na Emissão Automática - ${company.nome}`,
-            html: novaSolicitacaoAdminEmailTemplate(
-              user.name,
-              user.email,
-              company.nome,
-              company.cnpj,
-              data.valor,
-              data.dataEmissao instanceof Date ? data.dataEmissao.toISOString() : data.dataEmissao,
-              data.observacoes || ''
-            ),
-          });
-        } catch (emailError) {
-          console.error('Erro ao enviar email para admin:', emailError);
-        }
+        this.notifyAdmin(user, company, data);
       }
-    } else if (!data.emissaoAutomatica) {
-      // Fluxo normal: enviar email para o admin processar manualmente
-      try {
-        await this.emailService.send({
-          to: 'iaappcontabil@gmail.com',
-          subject: `🔔 Nova Solicitação de Nota Fiscal - ${company.nome}`,
-          html: novaSolicitacaoAdminEmailTemplate(
-            user.name,
-            user.email,
-            company.nome,
-            company.cnpj,
-            data.valor,
-            data.dataEmissao instanceof Date ? data.dataEmissao.toISOString() : data.dataEmissao,
-            data.observacoes || ''
-          ),
-        });
-      } catch (error) {
-        console.error('Erro ao enviar email para admin:', error);
-      }
+    } else {
+      // Fluxo normal ou dados insuficientes: notificar admin
+      this.notifyAdmin(user, company, data);
     }
 
     return request;
+  }
+
+  private async notifyAdmin(user: any, company: any, data: CreateRequestDTO) {
+    try {
+      await this.emailService.send({
+        to: 'iaappcontabil@gmail.com',
+        subject: `🔔 Nova Solicitação de Nota Fiscal - ${company.nome}`,
+        html: novaSolicitacaoAdminEmailTemplate(
+          user.name,
+          user.email,
+          company.nome,
+          company.cnpj,
+          data.valor,
+          data.dataEmissao instanceof Date ? data.dataEmissao.toISOString() : data.dataEmissao,
+          data.observacoes || ''
+        ),
+      });
+    } catch (error) {
+      console.error('Erro ao enviar email para admin:', error);
+    }
   }
 }

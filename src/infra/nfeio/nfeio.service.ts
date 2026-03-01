@@ -1,168 +1,167 @@
+import axios from 'axios';
+import FormData from 'form-data';
 import { env } from '@/main/config/env';
+import { 
+  NFEIOCompanyInput, 
+  NFEIOCompanyResponse, 
+  NFEIOServiceProtocol,
+  NFEIOServiceInvoiceInput
+} from '@/data/protocols/nfeio.service';
 
-// Tipos baseados na documentação nfe.io
-export interface NFEIOBorrower {
-  type: 'LegalEntity' | 'NaturalPerson';
-  federalTaxNumber: number; // CNPJ ou CPF (apenas números)
-  name: string;
-  email: string;
-  address?: {
-    country: string; // 'BRA'
-    postalCode: string;
-    street: string;
-    number: string;
-    additionalInformation?: string;
-    district: string;
-    city: {
-      code: string; // Código IBGE
-      name: string;
-    };
-    state: string; // Sigla do estado (2 letras)
-  };
-}
-
-export interface NFEIOServiceInvoiceInput {
-  cityServiceCode: string; // Código do serviço municipal
-  description: string; // Descrição dos serviços
-  servicesAmount: number; // Valor total dos serviços
-  borrower: NFEIOBorrower; // Dados do tomador do serviço
-  rpsNumber?: number; // Número do RPS (opcional)
-  rpsSerialNumber?: string; // Série do RPS (opcional)
-}
-
-export interface NFEIOServiceInvoiceResponse {
-  id: string;
-  status: string;
-  borrower: NFEIOBorrower;
-  cityServiceCode: string;
-  description: string;
-  servicesAmount: number;
-  number?: string; // Número da nota fiscal emitida
-  verificationCode?: string; // Código de verificação
-  pdfUrl?: string; // URL do PDF da nota
-  xmlUrl?: string; // URL do XML da nota
-  createdOn: string;
-  modifiedOn: string;
-  flowStatus: string;
-  flowMessage?: string;
-}
-
-export class NFEIOService {
+export class NFEIOService implements NFEIOServiceProtocol {
   private apiKey: string;
-  private companyId: string;
-  private baseUrl = 'https://api.nfe.io';
+  private baseUrl: string;
 
-  constructor(apiKey?: string, companyId?: string) {
-    this.apiKey = apiKey || env.nfeioApiKey;
-    this.companyId = companyId || env.nfeioCompanyId;
+  constructor(apiKey?: string) {
+    const rawKey = apiKey || env.nfeioApiKey;
+    this.apiKey = rawKey.replace(/['"]+/g, '').trim();
+    this.baseUrl = env.nfeioBaseUrl;
   }
 
-  /**
-   * Emite uma nota fiscal de serviço eletrônica (NFS-e)
-   */
-  async emitServiceInvoice(
-    data: NFEIOServiceInvoiceInput
-  ): Promise<NFEIOServiceInvoiceResponse> {
-    try {
-      const nfeio = require('nfe-io')(this.apiKey);
+  private getRequestConfig(path: string) {
+    const url = `${this.baseUrl}${path}`;
+    const headers = {
+      'Authorization': this.apiKey,
+      'Accept': 'application/json',
+      'Content-Type': 'application/json'
+    };
+    return { url, headers };
+  }
 
-      return new Promise((resolve, reject) => {
-        nfeio.serviceInvoices.create(
-          this.companyId,
-          data,
-          (error: any, result: NFEIOServiceInvoiceResponse) => {
-            if (error) {
-              console.error('Erro ao emitir nota fiscal:', error);
-              reject(new Error(`Erro ao emitir nota fiscal: ${error.message || error}`));
-            } else {
-              resolve(result);
-            }
-          }
-        );
-      });
+  private handleError(operation: string, error: any) {
+    const errorData = error.response?.data;
+    const status = error.response?.status;
+    
+    console.error(`[NFe.io] Erro na operação: ${operation}`);
+    console.error(`[NFe.io] Status: ${status}`);
+    
+    let message = error.message;
+    
+    if (errorData) {
+      if (typeof errorData === 'string') {
+        message = errorData;
+      } else if (errorData.message && typeof errorData.message === 'string') {
+        message = errorData.message;
+      } else if (errorData.message && typeof errorData.message === 'object') {
+        message = JSON.stringify(errorData.message);
+      } else if (errorData.errors && Array.isArray(errorData.errors)) {
+        message = errorData.errors.map((e: any) => (typeof e === 'object' ? JSON.stringify(e) : e)).join(', ');
+      } else if (errorData.error && typeof errorData.error === 'string') {
+        message = errorData.error;
+      } else {
+        message = JSON.stringify(errorData);
+      }
+    }
+    
+    console.error(`[NFe.io] Mensagem processada: ${message}`);
+    
+    throw new Error(`Erro no NFe.io (${operation}): ${message}`);
+  }
+
+  async listCompanies(): Promise<NFEIOCompanyResponse[]> {
+    const { url, headers } = this.getRequestConfig('/companies');
+    try {
+      const response = await axios.get(url, { headers });
+      return response.data.companies;
     } catch (error: any) {
-      console.error('Erro ao emitir nota fiscal:', error);
-      throw new Error(`Erro ao emitir nota fiscal: ${error.message}`);
+      this.handleError('listCompanies', error);
+      throw error;
     }
   }
 
-  /**
-   * Consulta uma nota fiscal pelo ID
-   */
-  async getServiceInvoice(invoiceId: string): Promise<NFEIOServiceInvoiceResponse> {
+  async createCompany(data: NFEIOCompanyInput): Promise<NFEIOCompanyResponse> {
+    const { url, headers } = this.getRequestConfig('/companies');
     try {
-      const nfeio = require('nfe-io')(this.apiKey);
-
-      return new Promise((resolve, reject) => {
-        nfeio.serviceInvoices.get(
-          this.companyId,
-          invoiceId,
-          (error: any, result: NFEIOServiceInvoiceResponse) => {
-            if (error) {
-              console.error('Erro ao consultar nota fiscal:', error);
-              reject(new Error(`Erro ao consultar nota fiscal: ${error.message || error}`));
-            } else {
-              resolve(result);
-            }
-          }
-        );
-      });
+      const response = await axios.post(url, data, { headers });
+      return response.data;
     } catch (error: any) {
-      console.error('Erro ao consultar nota fiscal:', error);
-      throw new Error(`Erro ao consultar nota fiscal: ${error.message}`);
+      this.handleError('createCompany', error);
+      throw error;
     }
   }
 
-  /**
-   * Lista todas as notas fiscais da empresa
-   */
-  async listServiceInvoices(): Promise<NFEIOServiceInvoiceResponse[]> {
+  async getCompany(companyIdOrTaxNumber: string): Promise<NFEIOCompanyResponse> {
+    const { url, headers } = this.getRequestConfig(`/companies/${companyIdOrTaxNumber}`);
     try {
-      const nfeio = require('nfe-io')(this.apiKey);
-
-      return new Promise((resolve, reject) => {
-        nfeio.serviceInvoices.list(
-          this.companyId,
-          (error: any, result: NFEIOServiceInvoiceResponse[]) => {
-            if (error) {
-              console.error('Erro ao listar notas fiscais:', error);
-              reject(new Error(`Erro ao listar notas fiscais: ${error.message || error}`));
-            } else {
-              resolve(result);
-            }
-          }
-        );
-      });
+      const response = await axios.get(url, { headers });
+      return response.data;
     } catch (error: any) {
-      console.error('Erro ao listar notas fiscais:', error);
-      throw new Error(`Erro ao listar notas fiscais: ${error.message}`);
+      this.handleError('getCompany', error);
+      throw error;
     }
   }
 
-  /**
-   * Cancela uma nota fiscal
-   */
-  async cancelServiceInvoice(invoiceId: string): Promise<NFEIOServiceInvoiceResponse> {
+  async updateCompany(companyId: string, data: NFEIOCompanyInput): Promise<NFEIOCompanyResponse> {
+    const { url, headers } = this.getRequestConfig(`/companies/${companyId}`);
     try {
-      const nfeio = require('nfe-io')(this.apiKey);
-
-      return new Promise((resolve, reject) => {
-        nfeio.serviceInvoices.cancel(
-          this.companyId,
-          invoiceId,
-          (error: any, result: NFEIOServiceInvoiceResponse) => {
-            if (error) {
-              console.error('Erro ao cancelar nota fiscal:', error);
-              reject(new Error(`Erro ao cancelar nota fiscal: ${error.message || error}`));
-            } else {
-              resolve(result);
-            }
-          }
-        );
-      });
+      const response = await axios.put(url, data, { headers });
+      return response.data;
     } catch (error: any) {
-      console.error('Erro ao cancelar nota fiscal:', error);
-      throw new Error(`Erro ao cancelar nota fiscal: ${error.message}`);
+      this.handleError('updateCompany', error);
+      throw error;
+    }
+  }
+
+  async deleteCompany(companyId: string): Promise<any> {
+    const { url, headers } = this.getRequestConfig(`/companies/${companyId}`);
+    try {
+      const response = await axios.delete(url, { headers });
+      return response.data;
+    } catch (error: any) {
+      this.handleError('deleteCompany', error);
+      throw error;
+    }
+  }
+
+  async uploadCertificate(companyId: string, certificateData: { file: Buffer, fileName: string, password?: string }): Promise<any> {
+    const { url } = this.getRequestConfig(`/companies/${companyId}/certificate`);
+    
+    try {
+      const form = new FormData();
+      form.append('file', certificateData.file, {
+        filename: certificateData.fileName,
+        contentType: 'application/x-pkcs12'
+      });
+      
+      if (certificateData.password) {
+        form.append('password', certificateData.password);
+      }
+
+      const response = await axios.post(url, form, {
+        headers: {
+          ...form.getHeaders(),
+          'Authorization': this.apiKey,
+          'Accept': 'application/json'
+        }
+      });
+      
+      return response.data;
+    } catch (error: any) {
+      this.handleError('uploadCertificate', error);
+      throw error;
+    }
+  }
+
+  async emitServiceInvoice(data: NFEIOServiceInvoiceInput): Promise<any> {
+    const { companyId, ...invoiceData } = data;
+    const { url, headers } = this.getRequestConfig(`/companies/${companyId}/serviceinvoices`);
+    try {
+      const response = await axios.post(url, invoiceData, { headers });
+      return response.data;
+    } catch (error: any) {
+      this.handleError('emitServiceInvoice', error);
+      throw error;
+    }
+  }
+
+  async getServiceInvoice(companyId: string, invoiceId: string): Promise<any> {
+    const { url, headers } = this.getRequestConfig(`/companies/${companyId}/serviceinvoices/${invoiceId}`);
+    try {
+      const response = await axios.get(url, { headers });
+      return response.data;
+    } catch (error: any) {
+      this.handleError('getServiceInvoice', error);
+      throw error;
     }
   }
 }
