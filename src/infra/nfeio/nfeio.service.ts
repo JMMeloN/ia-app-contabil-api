@@ -165,6 +165,17 @@ export class NFEIOService implements NFEIOServiceProtocol {
     }
   }
 
+  async getServiceInvoiceByExternalId(companyId: string, externalId: string): Promise<any> {
+    const { url, headers } = this.getRequestConfig(`/companies/${companyId}/serviceinvoices/external/${externalId}`);
+    try {
+      const response = await axios.get(url, { headers });
+      return response.data;
+    } catch (error: any) {
+      this.handleError('getServiceInvoiceByExternalId', error);
+      throw error;
+    }
+  }
+
   async getServiceInvoicePdfUrl(companyId: string, invoiceId: string): Promise<string | undefined> {
     const { url, headers } = this.getRequestConfig(`/companies/${companyId}/serviceinvoices/${invoiceId}/pdf`);
 
@@ -212,6 +223,55 @@ export class NFEIOService implements NFEIOServiceProtocol {
       return undefined;
     } catch (error: any) {
       this.handleError('getServiceInvoicePdfUrl', error);
+      throw error;
+    }
+  }
+
+  async getServiceInvoicePdfUrlByExternalId(companyId: string, externalId: string): Promise<string | undefined> {
+    const { url, headers } = this.getRequestConfig(`/companies/${companyId}/serviceinvoices/external/${externalId}/pdf`);
+    try {
+      const redirectResponse = await axios.get(url, {
+        headers,
+        maxRedirects: 0,
+        validateStatus: () => true,
+      });
+
+      const locationHeader = redirectResponse.headers?.location;
+      if (typeof locationHeader === 'string' && locationHeader.startsWith('http')) {
+        return locationHeader;
+      }
+
+      const data = redirectResponse.data;
+      if (typeof data === 'string' && data.startsWith('http')) return data;
+      if (data?.url && typeof data.url === 'string') return data.url;
+      if (data?.pdfUrl && typeof data.pdfUrl === 'string') return data.pdfUrl;
+      if (data?.pdf?.url && typeof data.pdf.url === 'string') return data.pdf.url;
+      if (data?.serviceInvoice?.pdfUrl && typeof data.serviceInvoice.pdfUrl === 'string') return data.serviceInvoice.pdfUrl;
+      if (data?.serviceInvoice?.pdf?.url && typeof data.serviceInvoice.pdf.url === 'string') return data.serviceInvoice.pdf.url;
+
+      return undefined;
+    } catch (error: any) {
+      this.handleError('getServiceInvoicePdfUrlByExternalId', error);
+      throw error;
+    }
+  }
+
+  async getServiceInvoicePdfBinary(companyId: string, invoiceId: string): Promise<Buffer | undefined> {
+    const { url, headers } = this.getRequestConfig(`/companies/${companyId}/serviceinvoices/${invoiceId}/pdf`);
+    try {
+      const response = await axios.get(url, {
+        headers,
+        responseType: 'arraybuffer',
+        maxRedirects: 10,
+      });
+
+      const contentType = String(response.headers['content-type'] || '').toLowerCase();
+      if (contentType.includes('application/pdf')) {
+        return Buffer.from(response.data);
+      }
+      return undefined;
+    } catch (error: any) {
+      this.handleError('getServiceInvoicePdfBinary', error);
       throw error;
     }
   }

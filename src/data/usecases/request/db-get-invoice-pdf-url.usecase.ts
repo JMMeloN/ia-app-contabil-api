@@ -1,5 +1,6 @@
 import {
   GetInvoicePdfUrlDTO,
+  InvoicePdfResult,
   GetInvoicePdfUrlUseCase,
 } from '@/domain/usecases/request/get-invoice-pdf-url.usecase';
 import { RequestRepository } from '@/data/protocols/request.repository';
@@ -14,7 +15,7 @@ export class DbGetInvoicePdfUrl implements GetInvoicePdfUrlUseCase {
     private readonly nfeioService: NFEIOServiceProtocol
   ) {}
 
-  async execute(data: GetInvoicePdfUrlDTO): Promise<string> {
+  async execute(data: GetInvoicePdfUrlDTO): Promise<InvoicePdfResult> {
     const request = await this.requestRepository.findById(data.requestId);
     if (!request) {
       throw new Error('Solicitação não encontrada');
@@ -26,7 +27,7 @@ export class DbGetInvoicePdfUrl implements GetInvoicePdfUrlUseCase {
 
     if (!request.nfeioInvoiceId) {
       if (request.arquivoUrl) {
-        return request.arquivoUrl;
+        return { url: request.arquivoUrl };
       }
       throw new Error('Solicitação sem nota NFE.io vinculada');
     }
@@ -34,38 +35,84 @@ export class DbGetInvoicePdfUrl implements GetInvoicePdfUrlUseCase {
     const company = await this.companyRepository.findById(request.companyId);
     if (!company?.nfeioCompanyId) {
       if (request.arquivoUrl) {
-        return request.arquivoUrl;
+        return { url: request.arquivoUrl };
       }
       throw new Error('Empresa não vinculada ao NFE.io');
     }
+    const invoiceId = request.nfeioInvoiceId;
 
-    const invoice = await this.nfeioService.getServiceInvoice(
-      company.nfeioCompanyId,
-      request.nfeioInvoiceId
-    );
+    let fileUrl: string | undefined;
+    try {
+      const invoice = await this.nfeioService.getServiceInvoice(
+        company.nfeioCompanyId,
+        invoiceId
+      );
+      fileUrl = resolveInvoiceFileUrl(invoice) || request.arquivoUrl || undefined;
+    } catch {
+      // tenta fallback por external id
+    }
 
-    let fileUrl = resolveInvoiceFileUrl(invoice) || request.arquivoUrl;
     if (!fileUrl) {
       try {
         fileUrl = await this.nfeioService.getServiceInvoicePdfUrl(
           company.nfeioCompanyId,
-          request.nfeioInvoiceId
+          invoiceId
         );
       } catch {
-        // fallback handled below
+        // tenta fallback por external id
       }
     }
+
     if (!fileUrl) {
-      throw new Error('PDF da nota ainda indisponível no NFE.io');
+      try {
+        const byExternal = await this.nfeioService.getServiceInvoiceByExternalId(
+          company.nfeioCompanyId,
+          request.id
+        );
+        fileUrl = resolveInvoiceFileUrl(byExternal);
+      } catch {
+        // segue fallback
+      }
     }
 
-    if (fileUrl !== request.arquivoUrl) {
-      await this.requestRepository.updateStatus(request.id, {
-        status: request.status,
-        arquivoUrl: fileUrl,
-      });
+    if (!fileUrl) {
+      try {
+        fileUrl = await this.nfeioService.getServiceInvoicePdfUrlByExternalId(
+          company.nfeioCompanyId,
+          request.id
+        );
+      } catch {
+        // segue fallback
+      }
     }
 
-    return fileUrl;
+    if (fileUrl) {
+      if (fileUrl !== request.arquivoUrl) {
+        await this.requestRepository.updateStatus(request.id, {
+          status: request.status,
+          arquivoUrl: fileUrl,
+        });
+      }
+      return { url: fileUrl };
+    }
+
+    let pdfBuffer: Buffer | undefined;
+    try {
+      pdfBuffer = await this.nfeioService.getServiceInvoicePdfBinary(
+        company.nfeioCompanyId,
+        invoiceId
+      );
+    } catch {
+      // handled below
+    }
+
+    if (pdfBuffer) {
+      return {
+        pdfBuffer,
+        fileName: `NF-${request.id.substring(0, 8).toUpperCase()}.pdf`,
+      };
+    }
+
+    throw new Error('PDF da nota ainda indisponível no NFE.io');
   }
 }

@@ -6,6 +6,12 @@ export interface GetInvoicePdfUrlDTO {
   requesterRole: UserRole;
 }
 
+export interface InvoicePdfResult {
+  url?: string;
+  pdfBuffer?: Buffer;
+  fileName?: string;
+}
+
 export interface GetInvoicePdfUrlUseCase {
-  execute(data: GetInvoicePdfUrlDTO): Promise<string>;
+  execute(data: GetInvoicePdfUrlDTO): Promise<InvoicePdfResult>;
 }

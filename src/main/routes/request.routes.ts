@@ -87,17 +87,27 @@ router.get('/:id/invoice-pdf', async (req: AuthRequest, res: Response) => {
   try {
     const { id } = req.params;
     const getInvoicePdfUrlUseCase = makeGetInvoicePdfUrlUseCase();
-    const fileUrl = await getInvoicePdfUrlUseCase.execute({
+    const result = await getInvoicePdfUrlUseCase.execute({
       requestId: id,
       requesterUserId: req.user!.userId,
       requesterRole: req.user!.role,
     });
 
-    const absoluteUrl = fileUrl.startsWith('http')
-      ? fileUrl
+    if (result.pdfBuffer) {
+      res.setHeader('Content-Type', 'application/pdf');
+      res.setHeader('Content-Disposition', `inline; filename=\"${result.fileName || 'nota-fiscal.pdf'}\"`);
+      return res.status(200).send(result.pdfBuffer);
+    }
+
+    if (!result.url) {
+      return res.status(400).json({ error: 'PDF da nota indisponível' });
+    }
+
+    const absoluteUrl = result.url.startsWith('http')
+      ? result.url
       : `${env.nodeEnv === 'production'
           ? 'https://iacontabil-api.onrender.com'
-          : `http://localhost:${env.port}`}${fileUrl}`;
+          : `http://localhost:${env.port}`}${result.url}`;
 
     return res.redirect(302, absoluteUrl);
   } catch (error: any) {
