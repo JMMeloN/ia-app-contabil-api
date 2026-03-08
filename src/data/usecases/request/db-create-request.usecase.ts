@@ -51,6 +51,7 @@ export class DbCreateRequest implements CreateRequestUseCase {
         };
 
         const invoice = await this.nfeioService.emitServiceInvoice({
+          companyId: company.nfeioCompanyId!,
           cityServiceCode: company.cityServiceCode || '0',
           description: data.observacoes || 'Serviços prestados',
           servicesAmount: data.valor,
