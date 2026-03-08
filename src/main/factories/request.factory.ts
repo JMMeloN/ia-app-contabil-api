@@ -4,6 +4,7 @@ import { DbGetRequestById } from '@/data/usecases/request/db-get-request-by-id.u
 import { DbUpdateRequestStatus } from '@/data/usecases/request/db-update-request-status.usecase';
 import { DbCancelRequest } from '@/data/usecases/request/db-cancel-request.usecase';
 import { DbCancelNfeioInvoice } from '@/data/usecases/request/db-cancel-nfeio-invoice.usecase';
+import { DbGetInvoicePdfUrl } from '@/data/usecases/request/db-get-invoice-pdf-url.usecase';
 import { DbEmitInvoice } from '@/data/usecases/request/db-emit-invoice.usecase';
 import { PrismaRequestRepository } from '@/infra/db/prisma/request.repository';
 import { PrismaCompanyRepository } from '@/infra/db/prisma/company.repository';
@@ -41,6 +42,13 @@ export function makeGetRequestByIdUseCase() {
   const companyRepository = new PrismaCompanyRepository();
   const nfeioService = new NFEIOService();
   return new DbGetRequestById(requestRepository, companyRepository, nfeioService);
+}
+
+export function makeGetInvoicePdfUrlUseCase() {
+  const requestRepository = new PrismaRequestRepository();
+  const companyRepository = new PrismaCompanyRepository();
+  const nfeioService = new NFEIOService();
+  return new DbGetInvoicePdfUrl(requestRepository, companyRepository, nfeioService);
 }
 
 export function makeUpdateRequestStatusUseCase() {

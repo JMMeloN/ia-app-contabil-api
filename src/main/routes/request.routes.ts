@@ -6,11 +6,13 @@ import {
   makeCreateRequestUseCase,
   makeListRequestsUseCase,
   makeGetRequestByIdUseCase,
+  makeGetInvoicePdfUrlUseCase,
   makeUpdateRequestStatusUseCase,
   makeCancelRequestUseCase,
   makeEmitInvoiceUseCase,
   makeCancelNfeioInvoiceUseCase,
 } from '@/main/factories/request.factory';
+import { env } from '@/main/config/env';
 
 const router = Router();
 
@@ -75,6 +77,29 @@ router.get('/:id', async (req: AuthRequest, res: Response) => {
     const request = await getRequestByIdUseCase.execute(id, userId);
 
     return res.status(200).json(request);
+  } catch (error: any) {
+    return res.status(400).json({ error: error.message });
+  }
+});
+
+// GET /requests/:id/invoice-pdf - Resolve URL atual da nota e redireciona para o PDF
+router.get('/:id/invoice-pdf', async (req: AuthRequest, res: Response) => {
+  try {
+    const { id } = req.params;
+    const getInvoicePdfUrlUseCase = makeGetInvoicePdfUrlUseCase();
+    const fileUrl = await getInvoicePdfUrlUseCase.execute({
+      requestId: id,
+      requesterUserId: req.user!.userId,
+      requesterRole: req.user!.role,
+    });
+
+    const absoluteUrl = fileUrl.startsWith('http')
+      ? fileUrl
+      : `${env.nodeEnv === 'production'
+          ? 'https://iacontabil-api.onrender.com'
+          : `http://localhost:${env.port}`}${fileUrl}`;
+
+    return res.redirect(302, absoluteUrl);
   } catch (error: any) {
     return res.status(400).json({ error: error.message });
   }
