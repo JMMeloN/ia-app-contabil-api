@@ -20,13 +20,17 @@ export class DbCreateCompany implements CreateCompanyUseCase {
 
     // Criar empresa no banco local primeiro para obter o ID
     const company = await this.companyRepository.create({
-      ...data,
-      dataAbertura: data.dataAbertura ? new Date(data.dataAbertura) : undefined,
+      nome: data.nome,
+      cnpj: data.cnpj,
+      email: data.email,
+      telefone: data.telefone,
+      endereco: data.endereco,
+      cidade: data.cidade,
+      estado: data.estado,
+      cep: data.cep,
+      userId: data.userId,
       nfeioCompanyId: undefined,
       cityServiceCode: data.cityServiceCode,
-      // Conversão de tipos para o Prisma (BigInt)
-      numeroJuntaComercial: data.numeroJuntaComercial ? BigInt(data.numeroJuntaComercial) : undefined,
-      rpsNumero: data.rpsNumero ? BigInt(data.rpsNumero) : undefined,
     });
 
     // Disparar criação no NFe.io em segundo plano (sem await)
@@ -94,7 +98,6 @@ export class DbCreateCompany implements CreateCompanyUseCase {
       if (nfeioId) {
         await this.companyRepository.update(companyId, {
           nfeioCompanyId: nfeioId,
-          statusFiscal: nfeioCompanyAny.companies?.status || 'Active'
         });
         console.info(`[NFe.io] Empresa ${companyId} vinculada com sucesso ao NFe.io (ID: ${nfeioId})`);
       }
