@@ -44,7 +44,17 @@ export class DbGetInvoicePdfUrl implements GetInvoicePdfUrlUseCase {
       request.nfeioInvoiceId
     );
 
-    const fileUrl = resolveInvoiceFileUrl(invoice) || request.arquivoUrl;
+    let fileUrl = resolveInvoiceFileUrl(invoice) || request.arquivoUrl;
+    if (!fileUrl) {
+      try {
+        fileUrl = await this.nfeioService.getServiceInvoicePdfUrl(
+          company.nfeioCompanyId,
+          request.nfeioInvoiceId
+        );
+      } catch {
+        // fallback handled below
+      }
+    }
     if (!fileUrl) {
       throw new Error('PDF da nota ainda indisponível no NFE.io');
     }

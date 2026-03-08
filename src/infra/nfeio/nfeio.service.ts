@@ -165,6 +165,24 @@ export class NFEIOService implements NFEIOServiceProtocol {
     }
   }
 
+  async getServiceInvoicePdfUrl(companyId: string, invoiceId: string): Promise<string | undefined> {
+    const { url, headers } = this.getRequestConfig(`/companies/${companyId}/serviceinvoices/${invoiceId}/pdf`);
+    try {
+      const response = await axios.get(url, { headers });
+      const data = response.data;
+
+      if (typeof data === 'string' && data.startsWith('http')) return data;
+      if (data?.url && typeof data.url === 'string') return data.url;
+      if (data?.pdfUrl && typeof data.pdfUrl === 'string') return data.pdfUrl;
+      if (data?.pdf?.url && typeof data.pdf.url === 'string') return data.pdf.url;
+
+      return undefined;
+    } catch (error: any) {
+      this.handleError('getServiceInvoicePdfUrl', error);
+      throw error;
+    }
+  }
+
   async cancelServiceInvoice(companyId: string, invoiceId: string): Promise<any> {
     const { url, headers } = this.getRequestConfig(`/companies/${companyId}/serviceinvoices/${invoiceId}`);
     try {

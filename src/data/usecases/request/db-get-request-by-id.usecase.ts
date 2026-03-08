@@ -32,7 +32,17 @@ export class DbGetRequestById implements GetRequestByIdUseCase {
             company.nfeioCompanyId,
             request.nfeioInvoiceId
           );
-          const fileUrl = resolveInvoiceFileUrl(invoice);
+          let fileUrl = resolveInvoiceFileUrl(invoice);
+          if (!fileUrl) {
+            try {
+              fileUrl = await this.nfeioService.getServiceInvoicePdfUrl(
+                company.nfeioCompanyId,
+                request.nfeioInvoiceId
+              );
+            } catch {
+              // fallback abaixo
+            }
+          }
           if (fileUrl) {
             await this.requestRepository.updateStatus(request.id, {
               status: request.status,
