@@ -167,10 +167,43 @@ export class NFEIOService implements NFEIOServiceProtocol {
 
   async getServiceInvoicePdfUrl(companyId: string, invoiceId: string): Promise<string | undefined> {
     const { url, headers } = this.getRequestConfig(`/companies/${companyId}/serviceinvoices/${invoiceId}/pdf`);
-    try {
-      const response = await axios.get(url, { headers });
-      const data = response.data;
 
+    // 1) Tenta capturar redirect explícito (Location)
+    try {
+      const redirectResponse = await axios.get(url, {
+        headers,
+        maxRedirects: 0,
+        validateStatus: () => true,
+      });
+
+      const locationHeader = redirectResponse.headers?.location;
+      if (typeof locationHeader === 'string' && locationHeader.startsWith('http')) {
+        return locationHeader;
+      }
+
+      const redirectData = redirectResponse.data;
+      if (typeof redirectData === 'string' && redirectData.startsWith('http')) return redirectData;
+      if (redirectData?.url && typeof redirectData.url === 'string') return redirectData.url;
+      if (redirectData?.pdfUrl && typeof redirectData.pdfUrl === 'string') return redirectData.pdfUrl;
+      if (redirectData?.pdf?.url && typeof redirectData.pdf.url === 'string') return redirectData.pdf.url;
+    } catch {
+      // segue fallback
+    }
+
+    // 2) Segue redirects e tenta extrair URL final/estrutura retornada
+    try {
+      const response = await axios.get(url, {
+        headers,
+        responseType: 'arraybuffer',
+        maxRedirects: 10,
+      });
+
+      const finalUrl = response.request?.res?.responseUrl;
+      if (typeof finalUrl === 'string' && finalUrl.startsWith('http')) {
+        return finalUrl;
+      }
+
+      const data = response.data;
       if (typeof data === 'string' && data.startsWith('http')) return data;
       if (data?.url && typeof data.url === 'string') return data.url;
       if (data?.pdfUrl && typeof data.pdfUrl === 'string') return data.pdfUrl;
