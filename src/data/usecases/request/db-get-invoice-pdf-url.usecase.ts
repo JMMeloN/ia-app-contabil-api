@@ -49,7 +49,7 @@ export class DbGetInvoicePdfUrl implements GetInvoicePdfUrlUseCase {
       );
       fileUrl = resolveInvoiceFileUrl(invoice) || request.arquivoUrl || undefined;
     } catch {
-      // tenta fallback por external id
+      // fallback abaixo
     }
 
     if (!fileUrl) {
@@ -59,30 +59,7 @@ export class DbGetInvoicePdfUrl implements GetInvoicePdfUrlUseCase {
           invoiceId
         );
       } catch {
-        // tenta fallback por external id
-      }
-    }
-
-    if (!fileUrl) {
-      try {
-        const byExternal = await this.nfeioService.getServiceInvoiceByExternalId(
-          company.nfeioCompanyId,
-          request.id
-        );
-        fileUrl = resolveInvoiceFileUrl(byExternal);
-      } catch {
-        // segue fallback
-      }
-    }
-
-    if (!fileUrl) {
-      try {
-        fileUrl = await this.nfeioService.getServiceInvoicePdfUrlByExternalId(
-          company.nfeioCompanyId,
-          request.id
-        );
-      } catch {
-        // segue fallback
+        // fallback abaixo
       }
     }
 

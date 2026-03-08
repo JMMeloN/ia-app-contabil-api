@@ -83,9 +83,7 @@ export interface NFEIOServiceProtocol {
   uploadCertificate(companyId: string, certificateData: any): Promise<any>;
   emitServiceInvoice(data: NFEIOServiceInvoiceInput): Promise<any>;
   getServiceInvoice(companyId: string, invoiceId: string): Promise<any>;
-  getServiceInvoiceByExternalId(companyId: string, externalId: string): Promise<any>;
   getServiceInvoicePdfUrl(companyId: string, invoiceId: string): Promise<string | undefined>;
-  getServiceInvoicePdfUrlByExternalId(companyId: string, externalId: string): Promise<string | undefined>;
   getServiceInvoicePdfBinary(companyId: string, invoiceId: string): Promise<Buffer | undefined>;
   cancelServiceInvoice(companyId: string, invoiceId: string): Promise<any>;
 }
