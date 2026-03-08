@@ -45,11 +45,12 @@ export class DbEmitInvoice implements EmitInvoiceUseCase {
 
     // 4. Montar dados do tomador (borrower)
     // Se a solicitação tiver dados do tomador, usa eles. Senão, fallback (exemplo simples)
-    const borrower = {
-      type: (request.tomadorDocumento?.replace(/\D/g, '').length || 0) > 11 ? 'LegalEntity' : 'NaturalPerson' as any,
-      federalTaxNumber: request.tomadorDocumento ? parseInt(request.tomadorDocumento.replace(/\D/g, '')) : parseInt(company.cnpj.replace(/\D/g, '')),
-      name: request.tomadorNome || company.nome,
-      email: request.tomadorEmail || company.email,
+    const cnpjDigits = company.cnpj.replace(/\D/g, '');
+    const borrower: { type: 'LegalEntity' | 'NaturalPerson'; federalTaxNumber: number; name: string; email: string } = {
+      type: cnpjDigits.length > 11 ? 'LegalEntity' : 'NaturalPerson',
+      federalTaxNumber: parseInt(cnpjDigits),
+      name: company.nome,
+      email: company.email,
     };
 
     // 5. Emitir nota fiscal via nfe.io

@@ -46,19 +46,9 @@ export class DbListCompanies implements ListCompaniesUseCase {
 
         if (matchingLocal) {
           console.info(`[NFe.io Sync] Atualizando dados da empresa ${matchingLocal.id} (${external.name})`);
-          
+
           await this.companyRepository.update(matchingLocal.id, {
             nfeioCompanyId: external.id,
-            nomeFantasia: external.tradeName || external.name,
-            rua: external.address?.street,
-            numero: external.address?.number,
-            bairro: external.address?.district,
-            complemento: external.address?.additionalInformation,
-            inscricaoMunicipal: external.municipalTaxNumber,
-            regimeTributario: external.taxRegime,
-            naturezaJuridica: external.legalNature,
-            statusFiscal: (external as any).fiscalStatus || matchingLocal.statusFiscal,
-            ambiente: (external as any).environment || matchingLocal.ambiente
           });
         }
       }

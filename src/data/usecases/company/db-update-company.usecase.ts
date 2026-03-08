@@ -47,8 +47,10 @@ export class DbUpdateCompany implements UpdateCompanyUseCase {
             },
             state: data.estado || company.estado
           },
-          taxRegime: data.taxRegime || 'Isento',
-          legalNature: data.legalNature || 'EmpresaIndividualImobiliaria',
+          openningDate: new Date().toISOString(),
+          municipalTaxNumber: '',
+          taxRegime: 'Isento',
+          legalNature: 'EmpresaIndividualImobiliaria',
           environment: 'Development'
         });
       } catch (error: any) {

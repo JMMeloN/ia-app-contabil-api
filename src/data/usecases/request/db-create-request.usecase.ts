@@ -43,11 +43,12 @@ export class DbCreateRequest implements CreateRequestUseCase {
         console.log('Emitindo nota automaticamente para:', company.nome);
 
         // Usar dados do tomador informados ou fallback para a própria empresa (se for o caso)
-        const borrower = {
-          type: (data.tomadorDocumento?.replace(/\D/g, '').length || 0) > 11 ? 'LegalEntity' : 'NaturalPerson',
-          federalTaxNumber: data.tomadorDocumento ? parseInt(data.tomadorDocumento.replace(/\D/g, '')) : parseInt(company.cnpj.replace(/\D/g, '')),
-          name: data.tomadorNome || company.nome,
-          email: data.tomadorEmail || company.email,
+        const cnpjDigits = company.cnpj.replace(/\D/g, '');
+        const borrower: { type: 'LegalEntity' | 'NaturalPerson'; federalTaxNumber: number; name: string; email: string } = {
+          type: cnpjDigits.length > 11 ? 'LegalEntity' : 'NaturalPerson',
+          federalTaxNumber: parseInt(cnpjDigits),
+          name: company.nome,
+          email: company.email,
         };
 
         const invoice = await this.nfeioService.emitServiceInvoice({
