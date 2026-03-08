@@ -9,6 +9,8 @@ import { NFEIOService } from '@/infra/nfeio/nfeio.service';
 import { notaProcessadaEmailTemplate } from '@/infra/email/templates/nota-processada-email';
 import { PayerRepository } from '@/data/protocols/payer.repository';
 import { resolveBorrower } from './payer-resolver';
+import { resolveInvoiceFileUrl } from './invoice-url-resolver';
+import axios from 'axios';
 
 export class DbCreateRequest implements CreateRequestUseCase {
   constructor(
@@ -76,12 +78,42 @@ export class DbCreateRequest implements CreateRequestUseCase {
 
         // Atualizar solicitação com dados da nota
         const nfeioId = (invoice as any).id || (invoice as any).companies?.id;
+        let fileUrl = resolveInvoiceFileUrl(invoice);
+
+        if (!fileUrl && nfeioId) {
+          try {
+            const fullInvoice = await this.nfeioService.getServiceInvoice(company.nfeioCompanyId!, nfeioId);
+            fileUrl = resolveInvoiceFileUrl(fullInvoice);
+          } catch (error: any) {
+            console.error('Falha ao buscar PDF da nota na NFE.io:', error.message);
+          }
+        }
+
         await this.requestRepository.updateStatus(request.id, {
           status: 'PROCESSADA',
-          arquivoUrl: (invoice as any).pdfUrl || (invoice as any).xmlUrl || undefined,
+          arquivoUrl: fileUrl,
           processadoEm: new Date(),
           nfeioInvoiceId: nfeioId,
         });
+
+        let attachments: Array<{ filename: string; content: Buffer }> | undefined;
+        if (fileUrl?.startsWith('http')) {
+          try {
+            const pdfResponse = await axios.get(fileUrl, {
+              responseType: 'arraybuffer',
+              timeout: 30000,
+              maxContentLength: 10 * 1024 * 1024,
+            });
+            attachments = [
+              {
+                filename: `NF-${request.id.substring(0, 8).toUpperCase()}.pdf`,
+                content: Buffer.from(pdfResponse.data),
+              },
+            ];
+          } catch (error: any) {
+            console.error('Falha ao baixar PDF para anexo no email:', error.message);
+          }
+        }
 
         // Enviar email para o cliente com a nota
         await this.emailService.send({
@@ -92,8 +124,9 @@ export class DbCreateRequest implements CreateRequestUseCase {
             company.nome,
             data.valor,
             (invoice as any).number || 'Em processamento',
-            (invoice as any).pdfUrl || '#'
+            fileUrl
           ),
+          attachments,
         });
 
         console.log('Nota emitida automaticamente com sucesso!');

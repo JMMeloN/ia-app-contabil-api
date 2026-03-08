@@ -8,6 +8,8 @@ import { EmailService } from '@/infra/email/resend-email-service';
 import { notaProcessadaEmailTemplate } from '@/infra/email/templates/nota-processada-email';
 import { PayerRepository } from '@/data/protocols/payer.repository';
 import { resolveBorrower } from './payer-resolver';
+import { resolveInvoiceFileUrl } from './invoice-url-resolver';
+import axios from 'axios';
 
 export class DbEmitInvoice implements EmitInvoiceUseCase {
   constructor(
@@ -81,15 +83,44 @@ export class DbEmitInvoice implements EmitInvoiceUseCase {
     // 6. Atualizar solicitação com status inicial
     const nfeioId = (invoice as any).id || (invoice as any).companies?.id;
     
+    let fileUrl = resolveInvoiceFileUrl(invoice);
+    if (!fileUrl && nfeioId) {
+      try {
+        const fullInvoice = await this.nfeioService.getServiceInvoice(company.nfeioCompanyId, nfeioId);
+        fileUrl = resolveInvoiceFileUrl(fullInvoice);
+      } catch (error: any) {
+        console.error('Falha ao buscar PDF da nota na NFE.io:', error.message);
+      }
+    }
+
     const updatedRequest = await this.requestRepository.updateStatus(data.requestId, {
       status: 'PROCESSADA',
-      arquivoUrl: (invoice as any).pdfUrl || undefined,
+      arquivoUrl: fileUrl,
       processadoEm: new Date(),
       nfeioInvoiceId: nfeioId,
     });
 
     // 7. Enviar email para o cliente
     try {
+      let attachments: Array<{ filename: string; content: Buffer }> | undefined;
+      if (fileUrl?.startsWith('http')) {
+        try {
+          const pdfResponse = await axios.get(fileUrl, {
+            responseType: 'arraybuffer',
+            timeout: 30000,
+            maxContentLength: 10 * 1024 * 1024,
+          });
+          attachments = [
+            {
+              filename: `NF-${request.id.substring(0, 8).toUpperCase()}.pdf`,
+              content: Buffer.from(pdfResponse.data),
+            },
+          ];
+        } catch (error: any) {
+          console.error('Falha ao baixar PDF para anexo no email:', error.message);
+        }
+      }
+
       await this.emailService.send({
         to: user.email,
         subject: `✅ Nota Fiscal Emitida - ${company.nome}`,
@@ -98,8 +129,9 @@ export class DbEmitInvoice implements EmitInvoiceUseCase {
           company.nome,
           request.valor,
           (invoice as any).number || 'Em processamento',
-          (invoice as any).pdfUrl || '#'
+          fileUrl
         ),
+        attachments,
       });
     } catch (error) {
       console.error('Erro ao enviar email para cliente:', error);

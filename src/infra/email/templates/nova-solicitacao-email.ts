@@ -14,226 +14,55 @@ export const novaSolicitacaoAdminEmailTemplate = (
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <style>
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-    }
-    body {
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-      background-color: #f5f5f5;
-      padding: 40px 20px;
-      line-height: 1.6;
-    }
-    .email-container {
-      max-width: 600px;
-      margin: 0 auto;
-      background-color: #ffffff;
-      border-radius: 8px;
-      overflow: hidden;
-      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-    }
-    .header {
-      background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
-      padding: 40px 20px;
-      text-align: center;
-    }
-    .header-title {
-      color: #ffffff;
-      font-size: 24px;
-      font-weight: 600;
-      margin: 0;
-    }
-    .content {
-      padding: 40px 30px;
-    }
-    .alert-banner {
-      background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
-      border-left: 4px solid #f59e0b;
-      padding: 16px 20px;
-      margin-bottom: 30px;
-      border-radius: 6px;
-    }
-    .alert-banner strong {
-      color: #92400e;
-      font-size: 15px;
-    }
-    .section {
-      background-color: #f9fafb;
-      border-radius: 8px;
-      padding: 24px;
-      margin-bottom: 20px;
-      border: 1px solid #e5e7eb;
-    }
-    .section-title {
-      color: #1f2937;
-      font-size: 16px;
-      font-weight: 600;
-      margin-bottom: 16px;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-    .info-row {
-      display: flex;
-      justify-content: space-between;
-      padding: 12px 0;
-      border-bottom: 1px solid #e5e7eb;
-    }
-    .info-row:last-child {
-      border-bottom: none;
-    }
-    .info-label {
-      color: #6b7280;
-      font-size: 13px;
-      font-weight: 500;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-    }
-    .info-value {
-      color: #1f2937;
-      font-size: 15px;
-      font-weight: 600;
-      text-align: right;
-    }
-    .valor-destaque {
-      background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%);
-      padding: 20px;
-      border-radius: 8px;
-      text-align: center;
-      margin: 20px 0;
-      border: 2px solid #10b981;
-    }
-    .valor-label {
-      color: #065f46;
-      font-size: 13px;
-      font-weight: 600;
-      text-transform: uppercase;
-      letter-spacing: 1px;
-      margin-bottom: 8px;
-    }
-    .valor-number {
-      color: #047857;
-      font-size: 32px;
-      font-weight: 700;
-    }
-    .observacoes-box {
-      background-color: #ffffff;
-      border: 1px solid #e5e7eb;
-      border-radius: 6px;
-      padding: 16px;
-      margin-top: 12px;
-    }
-    .observacoes-text {
-      color: #4b5563;
-      font-size: 14px;
-      font-style: italic;
-      line-height: 1.6;
-    }
-    .footer {
-      background-color: #f9fafb;
-      padding: 25px 30px;
-      text-align: center;
-      border-top: 1px solid #e5e7eb;
-    }
-    .footer-text {
-      color: #9ca3af;
-      font-size: 12px;
-      margin: 5px 0;
-    }
+    body { margin: 0; padding: 24px; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif; background: #f3f4f6; color: #111111; }
+    .email-container { max-width: 620px; margin: 0 auto; background: #ffffff; border: 1px solid #e5e7eb; border-radius: 12px; overflow: hidden; }
+    .header { background: #111111; color: #fff; padding: 24px; }
+    .brand { margin: 0; font-size: 22px; font-weight: 800; }
+    .subtitle { margin: 6px 0 0 0; color: #fb923c; font-size: 14px; }
+    .content { padding: 24px; }
+    .badge { display: inline-block; border: 1px solid #fdba74; background: #fff7ed; color: #c2410c; border-radius: 999px; padding: 4px 10px; font-size: 12px; font-weight: 700; margin-bottom: 16px; }
+    .section { border: 1px solid #fcd9bd; background: #fffbf8; border-radius: 10px; padding: 14px; margin: 14px 0; }
+    .title { margin: 0 0 10px 0; font-size: 14px; font-weight: 800; color: #9a3412; text-transform: uppercase; }
+    .row { display: flex; justify-content: space-between; gap: 8px; border-bottom: 1px solid #fed7aa; padding: 8px 0; }
+    .row:last-child { border-bottom: none; }
+    .label { font-size: 12px; font-weight: 600; color: #6b7280; text-transform: uppercase; }
+    .value { font-size: 14px; font-weight: 700; color: #111111; text-align: right; }
+    .amount { text-align: center; font-size: 30px; font-weight: 800; margin-top: 8px; }
+    .obs { font-size: 14px; color: #374151; margin-top: 8px; }
+    .footer { background: #111111; color: #d1d5db; text-align: center; padding: 16px 24px; font-size: 12px; }
   </style>
 </head>
 <body>
   <div class="email-container">
-    <!-- Header -->
     <div class="header">
-      <h1 class="header-title" style="font-size: 28px; margin-bottom: 10px;">IAContabil</h1>
-      <p style="color: rgba(255,255,255,0.9); font-size: 20px; margin: 0;">🔔 Nova Solicitação Recebida</p>
+      <p class="brand">IAContabil</p>
+      <p class="subtitle">Nova solicitação para processar</p>
     </div>
 
-    <!-- Content -->
     <div class="content">
-      <div class="alert-banner">
-        <strong>⚠️ Ação Necessária:</strong> Uma nova solicitação de nota fiscal aguarda processamento.
-      </div>
+      <span class="badge">Ação necessária</span>
 
-      <!-- Dados do Solicitante -->
       <div class="section">
-        <div class="section-title">
-          👤 Dados do Solicitante
-        </div>
-        <div class="info-row">
-          <span class="info-label">Nome Completo</span>
-          <span class="info-value">${userName}</span>
-        </div>
-        <div class="info-row">
-          <span class="info-label">E-mail</span>
-          <span class="info-value">${userEmail}</span>
-        </div>
+        <p class="title">Solicitante</p>
+        <div class="row"><span class="label">Nome</span><span class="value">${userName}</span></div>
+        <div class="row"><span class="label">Email</span><span class="value">${userEmail}</span></div>
       </div>
 
-      <!-- Dados da Empresa -->
       <div class="section">
-        <div class="section-title">
-          🏢 Dados da Empresa
-        </div>
-        <div class="info-row">
-          <span class="info-label">Razão Social</span>
-          <span class="info-value">${companyName}</span>
-        </div>
-        <div class="info-row">
-          <span class="info-label">CNPJ</span>
-          <span class="info-value">${companyCNPJ}</span>
-        </div>
+        <p class="title">Empresa emissora</p>
+        <div class="row"><span class="label">Razão social</span><span class="value">${companyName}</span></div>
+        <div class="row"><span class="label">CNPJ</span><span class="value">${companyCNPJ}</span></div>
       </div>
 
-      <!-- Dados da Nota Fiscal -->
       <div class="section">
-        <div class="section-title">
-          📄 Dados da Nota Fiscal
-        </div>
-
-        <div class="valor-destaque">
-          <div class="valor-label">Valor da Nota Fiscal</div>
-          <div class="valor-number">
-            ${new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(valor)}
-          </div>
-        </div>
-
-        <div class="info-row">
-          <span class="info-label">Data de Emissão</span>
-          <span class="info-value">${new Date(dataEmissao).toLocaleDateString('pt-BR', {
-            day: '2-digit',
-            month: 'long',
-            year: 'numeric'
-          })}</span>
-        </div>
-
-        ${observacoes ? `
-        <div style="margin-top: 16px;">
-          <div class="info-label" style="margin-bottom: 8px;">Observações</div>
-          <div class="observacoes-box">
-            <p class="observacoes-text">${observacoes}</p>
-          </div>
-        </div>
-        ` : ''}
-      </div>
-
-      <div style="background-color: #eff6ff; border: 1px solid #bfdbfe; border-radius: 6px; padding: 16px; margin-top: 25px; text-align: center;">
-        <p style="color: #1e40af; font-size: 14px; font-weight: 500;">
-          Acesse o painel administrativo para processar esta solicitação.
-        </p>
+        <p class="title">Dados da nota</p>
+        <div class="row"><span class="label">Data de emissão</span><span class="value">${new Date(dataEmissao).toLocaleDateString('pt-BR')}</span></div>
+        <div class="amount">${new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(valor)}</div>
+        ${observacoes ? `<p class="obs"><strong>Observações:</strong> ${observacoes}</p>` : ''}
       </div>
     </div>
 
-    <!-- Footer -->
-    <div class="footer">
-      <p class="footer-text" style="font-weight: 600; color: #6b7280; margin-bottom: 8px;">
-        IAContabil - Sistema de Gestão de Notas Fiscais
-      </p>
-      <p class="footer-text">© ${new Date().getFullYear()} IAContabil - Todos os direitos reservados</p>
-      <p class="footer-text">Este é um e-mail automático. Por favor, não responda.</p>
-    </div>
+    <div class="footer">IAContabil • © ${new Date().getFullYear()}</div>
   </div>
 </body>
 </html>
