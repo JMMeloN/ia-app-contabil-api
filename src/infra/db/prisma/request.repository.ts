@@ -27,6 +27,14 @@ export class PrismaRequestRepository implements RequestRepository {
             cnpj: true,
           },
         },
+        payer: {
+          select: {
+            id: true,
+            name: true,
+            document: true,
+            email: true,
+          },
+        },
         user: {
           select: {
             id: true,
@@ -51,6 +59,14 @@ export class PrismaRequestRepository implements RequestRepository {
           select: {
             nome: true,
             cnpj: true,
+          },
+        },
+        payer: {
+          select: {
+            id: true,
+            name: true,
+            document: true,
+            email: true,
           },
         },
         user: {

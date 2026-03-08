@@ -6,6 +6,8 @@ import { UserRepository } from '@/data/protocols/user.repository';
 import { NFEIOServiceProtocol } from '@/data/protocols/nfeio.service';
 import { EmailService } from '@/infra/email/resend-email-service';
 import { notaProcessadaEmailTemplate } from '@/infra/email/templates/nota-processada-email';
+import { PayerRepository } from '@/data/protocols/payer.repository';
+import { resolveBorrower } from './payer-resolver';
 
 export class DbEmitInvoice implements EmitInvoiceUseCase {
   constructor(
@@ -13,7 +15,8 @@ export class DbEmitInvoice implements EmitInvoiceUseCase {
     private readonly companyRepository: CompanyRepository,
     private readonly userRepository: UserRepository,
     private readonly nfeioService: NFEIOServiceProtocol,
-    private readonly emailService: EmailService
+    private readonly emailService: EmailService,
+    private readonly payerRepository: PayerRepository
   ) {}
 
   async execute(data: EmitInvoiceDTO): Promise<RequestModel> {
@@ -43,15 +46,13 @@ export class DbEmitInvoice implements EmitInvoiceUseCase {
       throw new Error('Usuário não encontrado');
     }
 
-    // 4. Montar dados do tomador (borrower)
-    // Se a solicitação tiver dados do tomador, usa eles. Senão, fallback (exemplo simples)
-    const cnpjDigits = company.cnpj.replace(/\D/g, '');
-    const borrower: { type: 'LegalEntity' | 'NaturalPerson'; federalTaxNumber: number; name: string; email: string } = {
-      type: cnpjDigits.length > 11 ? 'LegalEntity' : 'NaturalPerson',
-      federalTaxNumber: parseInt(cnpjDigits),
-      name: company.nome,
-      email: company.email,
-    };
+    let payer = null;
+    if (request.payerId) {
+      payer = await this.payerRepository.findById(request.payerId);
+    }
+
+    // 4. Montar dados do tomador (borrower) com base no request/payer
+    const borrower = resolveBorrower(company, { payer, request });
 
     // 5. Emitir nota fiscal via nfe.io
     // Nota: O nfeioService agora precisa saber qual empresa está emitindo se não for a padrão
@@ -77,13 +78,14 @@ export class DbEmitInvoice implements EmitInvoiceUseCase {
       throw new Error(`Falha ao emitir nota fiscal: ${error.message}`);
     }
 
-    // 6. Atualizar solicitação com o ID da nota no NFe.io e status inicial
+    // 6. Atualizar solicitação com status inicial
     const nfeioId = (invoice as any).id || (invoice as any).companies?.id;
     
     const updatedRequest = await this.requestRepository.updateStatus(data.requestId, {
       status: 'PROCESSADA',
       arquivoUrl: (invoice as any).pdfUrl || undefined,
       processadoEm: new Date(),
+      nfeioInvoiceId: nfeioId,
     });
 
     // 7. Enviar email para o cliente

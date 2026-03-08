@@ -17,14 +17,17 @@ export class DbCancelRequest implements CancelRequestUseCase {
       throw new Error('Você não tem permissão para cancelar esta solicitação');
     }
 
-    // Não permitir cancelar se já foi processada
-    if (request.status === 'PROCESSADA') {
-      throw new Error('Não é possível cancelar uma solicitação já processada');
-    }
-
     // Não permitir cancelar se já está cancelada
     if (request.status === 'CANCELADA') {
       throw new Error('Esta solicitação já está cancelada');
+    }
+
+    // Se já foi processada, só permite cancelar quando houver vínculo NFE.io
+    // Regra solicitada: apenas cancelar localmente no banco (sem apagar/cancelar na NFE.io)
+    if (request.status === 'PROCESSADA') {
+      if (!request.nfeioInvoiceId) {
+        throw new Error('Não é possível cancelar uma solicitação processada sem vínculo NFE.io');
+      }
     }
 
     // Cancelar solicitação

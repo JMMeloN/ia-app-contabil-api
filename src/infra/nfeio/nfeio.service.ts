@@ -164,4 +164,15 @@ export class NFEIOService implements NFEIOServiceProtocol {
       throw error;
     }
   }
+
+  async cancelServiceInvoice(companyId: string, invoiceId: string): Promise<any> {
+    const { url, headers } = this.getRequestConfig(`/companies/${companyId}/serviceinvoices/${invoiceId}`);
+    try {
+      const response = await axios.delete(url, { headers });
+      return response.data;
+    } catch (error: any) {
+      this.handleError('cancelServiceInvoice', error);
+      throw error;
+    }
+  }
 }

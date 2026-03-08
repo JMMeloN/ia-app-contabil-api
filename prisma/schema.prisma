@@ -36,6 +36,7 @@ model User {
   // Relations
   companies Company[]
   requests  Request[]
+  payers    Payer[]
 
   @@map("users")
 }
@@ -101,6 +102,7 @@ model Request {
   arquivoUrl      String?
   userId          String
   companyId       String
+  payerId         String?
   
   // Dados do Tomador (quem recebe a nota)
   tomadorNome      String?
@@ -118,6 +120,24 @@ model Request {
   // Relations
   user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
   company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  payer   Payer?  @relation(fields: [payerId], references: [id], onDelete: SetNull)
 
   @@map("requests")
+}
+
+model Payer {
+  id        String   @id @default(uuid())
+  name      String
+  document  String
+  email     String?
+  userId    String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  requests Request[]
+
+  @@unique([userId, document])
+  @@map("payers")
 }

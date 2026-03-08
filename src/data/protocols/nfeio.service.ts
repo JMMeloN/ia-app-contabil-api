@@ -82,4 +82,5 @@ export interface NFEIOServiceProtocol {
   uploadCertificate(companyId: string, certificateData: any): Promise<any>;
   emitServiceInvoice(data: NFEIOServiceInvoiceInput): Promise<any>;
   getServiceInvoice(companyId: string, invoiceId: string): Promise<any>;
+  cancelServiceInvoice(companyId: string, invoiceId: string): Promise<any>;
 }

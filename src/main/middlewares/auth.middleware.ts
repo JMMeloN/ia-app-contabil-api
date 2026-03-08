@@ -1,12 +1,13 @@
 import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 import { env } from '@/main/config/env';
+import { UserRole } from '@/domain/models/user.model';
 
 export interface AuthRequest extends Request {
   user?: {
     userId: string;
     email: string;
-    role: string;
+    role: UserRole;
   };
 }
 
@@ -23,7 +24,7 @@ export function authMiddleware(req: AuthRequest, res: Response, next: NextFuncti
     const decoded = jwt.verify(token, env.jwtSecret) as {
       userId: string;
       email: string;
-      role: string;
+      role: UserRole;
     };
 
     req.user = decoded;

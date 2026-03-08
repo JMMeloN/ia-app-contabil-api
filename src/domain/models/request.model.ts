@@ -9,6 +9,11 @@ export interface RequestModel {
   arquivoUrl?: string | null;
   userId: string;
   companyId: string;
+  payerId?: string | null;
+  tomadorNome?: string | null;
+  tomadorDocumento?: string | null;
+  tomadorEmail?: string | null;
+  nfeioInvoiceId?: string | null;
   processadoEm?: Date | null;
   emissaoAutomatica: boolean;
   createdAt: Date;

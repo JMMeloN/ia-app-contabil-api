@@ -57,7 +57,7 @@ const createCompanySchema = z.object({
 
 const updateCompanySchema = z.object({
   nome: z.string().min(3, 'Nome deve ter no mínimo 3 caracteres').optional(),
-  cnpj: z.string().regex(/^\d{2}\.\d.3\.\d{3}\/\d{4}-\d{2}$/, 'CNPJ inválido').optional(),
+  cnpj: z.string().regex(/^\d{2}\.\d{3}\.\d{3}\/\d{4}-\d{2}$/, 'CNPJ inválido').optional(),
   email: z.string().email('Email inválido').optional(),
   telefone: z.string().regex(/^\(\d{2}\)\s?\d{4,5}-\d{4}$/, 'Telefone inválido').optional(),
   endereco: z.string().min(5, 'Endereço inválido').optional(),

@@ -7,6 +7,8 @@ import { EmailService } from '@/infra/email/resend-email-service';
 import { novaSolicitacaoAdminEmailTemplate } from '@/infra/email/templates/nova-solicitacao-email';
 import { NFEIOService } from '@/infra/nfeio/nfeio.service';
 import { notaProcessadaEmailTemplate } from '@/infra/email/templates/nota-processada-email';
+import { PayerRepository } from '@/data/protocols/payer.repository';
+import { resolveBorrower } from './payer-resolver';
 
 export class DbCreateRequest implements CreateRequestUseCase {
   constructor(
@@ -14,7 +16,8 @@ export class DbCreateRequest implements CreateRequestUseCase {
     private readonly companyRepository: CompanyRepository,
     private readonly userRepository: UserRepository,
     private readonly emailService: EmailService,
-    private readonly nfeioService: NFEIOService
+    private readonly nfeioService: NFEIOService,
+    private readonly payerRepository: PayerRepository
   ) {}
 
   async execute(data: CreateRequestDTO): Promise<RequestModel> {
@@ -34,36 +37,50 @@ export class DbCreateRequest implements CreateRequestUseCase {
       throw new Error('Usuário não encontrado');
     }
 
+    let payer = null;
+    if (data.payerId) {
+      payer = await this.payerRepository.findById(data.payerId);
+      if (!payer || payer.userId !== data.userId) {
+        throw new Error('Tomador inválido para este usuário');
+      }
+    }
+
+    const borrower = resolveBorrower(company, {
+      payer,
+      tomadorNome: data.tomadorNome,
+      tomadorDocumento: data.tomadorDocumento,
+      tomadorEmail: data.tomadorEmail,
+    });
+
     // Criar solicitação no banco local
-    const request = await this.requestRepository.create(data);
+    const request = await this.requestRepository.create({
+      ...data,
+      payerId: payer?.id,
+      tomadorNome: borrower.name,
+      tomadorDocumento: String(borrower.federalTaxNumber),
+      tomadorEmail: borrower.email,
+    });
 
     // Se emissão automática estiver habilitada E a empresa tiver configuração NFe.io
-    if (data.emissaoAutomatica && company.nfeioCompanyId && (company.cityServiceCode || data.tomadorNome)) {
+    if (data.emissaoAutomatica && company.nfeioCompanyId && company.cityServiceCode) {
       try {
         console.log('Emitindo nota automaticamente para:', company.nome);
 
-        // Usar dados do tomador informados ou fallback para a própria empresa (se for o caso)
-        const cnpjDigits = company.cnpj.replace(/\D/g, '');
-        const borrower: { type: 'LegalEntity' | 'NaturalPerson'; federalTaxNumber: number; name: string; email: string } = {
-          type: cnpjDigits.length > 11 ? 'LegalEntity' : 'NaturalPerson',
-          federalTaxNumber: parseInt(cnpjDigits),
-          name: company.nome,
-          email: company.email,
-        };
-
         const invoice = await this.nfeioService.emitServiceInvoice({
           companyId: company.nfeioCompanyId!,
-          cityServiceCode: company.cityServiceCode || '0',
+          cityServiceCode: company.cityServiceCode,
           description: data.observacoes || 'Serviços prestados',
           servicesAmount: data.valor,
           borrower,
         });
 
         // Atualizar solicitação com dados da nota
+        const nfeioId = (invoice as any).id || (invoice as any).companies?.id;
         await this.requestRepository.updateStatus(request.id, {
           status: 'PROCESSADA',
           arquivoUrl: (invoice as any).pdfUrl || (invoice as any).xmlUrl || undefined,
           processadoEm: new Date(),
+          nfeioInvoiceId: nfeioId,
         });
 
         // Enviar email para o cliente com a nota

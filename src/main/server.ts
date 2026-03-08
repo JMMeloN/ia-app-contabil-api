@@ -9,6 +9,7 @@ import requestRoutes from './routes/request.routes';
 import userRoutes from './routes/user.routes';
 import uploadRoutes from './routes/upload.routes';
 import seedRoutes from './routes/seed.routes';
+import payerRoutes from './routes/payer.routes';
 
 const app = express();
 
@@ -33,6 +34,7 @@ app.use('/requests', requestRoutes);
 app.use('/users', userRoutes);
 app.use('/upload', uploadRoutes);
 app.use('/seed', seedRoutes);
+app.use('/payers', payerRoutes);
 
 // Health check
 app.get('/health', (req, res) => {

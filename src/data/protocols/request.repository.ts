@@ -6,12 +6,18 @@ export interface CreateRequestData {
   observacoes?: string;
   userId: string;
   companyId: string;
+  emissaoAutomatica?: boolean;
+  payerId?: string;
+  tomadorNome?: string;
+  tomadorDocumento?: string;
+  tomadorEmail?: string;
 }
 
 export interface UpdateRequestStatusData {
   status: RequestStatus;
   arquivoUrl?: string;
   processadoEm?: Date;
+  nfeioInvoiceId?: string;
 }
 
 export interface FindRequestsFilters {

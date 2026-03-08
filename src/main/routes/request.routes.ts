@@ -9,6 +9,7 @@ import {
   makeUpdateRequestStatusUseCase,
   makeCancelRequestUseCase,
   makeEmitInvoiceUseCase,
+  makeCancelNfeioInvoiceUseCase,
 } from '@/main/factories/request.factory';
 
 const router = Router();
@@ -23,7 +24,11 @@ const createRequestSchema = z.object({
   observacoes: z.string().optional(),
   companyId: z.string().uuid('ID da empresa inválido'),
   emissaoAutomatica: z.boolean().optional().default(false),
-  // Novos campos do Tomador
+  // Tomador (payer) - compatível com legado
+  payerId: z.string().uuid('ID do tomador inválido').optional(),
+  payerName: z.string().optional(),
+  payerDocument: z.string().optional(),
+  payerEmail: z.string().email('Email do tomador inválido').optional().or(z.literal('')),
   tomadorNome: z.string().optional(),
   tomadorDocumento: z.string().optional(),
   tomadorEmail: z.string().email('Email do tomador inválido').optional().or(z.literal('')),
@@ -82,6 +87,10 @@ router.post('/', roleMiddleware(['CLIENTE']), async (req: AuthRequest, res: Resp
     const createRequestUseCase = makeCreateRequestUseCase();
     const request = await createRequestUseCase.execute({
       ...data,
+      payerId: data.payerId,
+      tomadorNome: data.payerName || data.tomadorNome,
+      tomadorDocumento: data.payerDocument || data.tomadorDocumento,
+      tomadorEmail: data.payerEmail || data.tomadorEmail,
       userId: req.user!.userId,
     });
 
@@ -158,6 +167,31 @@ router.post(
       if (error.name === 'ZodError') {
         return res.status(400).json({ error: 'Dados inválidos', details: error.errors });
       }
+      return res.status(400).json({ error: error.message });
+    }
+  }
+);
+
+// POST /requests/:id/cancel-nfeio - Cancelar nota na NFE.io e refletir no banco
+router.post(
+  '/:id/cancel-nfeio',
+  roleMiddleware(['OPERACIONAL', 'ADMIN']),
+  async (req: AuthRequest, res: Response) => {
+    try {
+      const { id } = req.params;
+      const cancelNfeioInvoiceUseCase = makeCancelNfeioInvoiceUseCase();
+
+      const request = await cancelNfeioInvoiceUseCase.execute({
+        requestId: id,
+        userId: req.user!.userId,
+        role: req.user!.role,
+      });
+
+      return res.status(200).json({
+        message: 'Nota cancelada no NFE.io e no banco local',
+        request,
+      });
+    } catch (error: any) {
       return res.status(400).json({ error: error.message });
     }
   }
