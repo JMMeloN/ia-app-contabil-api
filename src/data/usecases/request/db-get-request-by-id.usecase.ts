@@ -24,11 +24,7 @@ export class DbGetRequestById implements GetRequestByIdUseCase {
       throw new Error('Você não tem permissão para visualizar esta solicitação');
     }
 
-    if (
-      request.status === 'PROCESSADA' &&
-      !request.arquivoUrl &&
-      request.nfeioInvoiceId
-    ) {
+    if (request.status === 'PROCESSADA' && request.nfeioInvoiceId) {
       const company = await this.companyRepository.findById(request.companyId);
       if (company?.nfeioCompanyId) {
         try {

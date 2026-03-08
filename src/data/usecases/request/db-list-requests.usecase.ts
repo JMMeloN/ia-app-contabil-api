@@ -19,7 +19,6 @@ export class DbListRequests implements ListRequestsUseCase {
       requests.map(async (request) => {
         if (
           request.status !== 'PROCESSADA' ||
-          request.arquivoUrl ||
           !request.nfeioInvoiceId
         ) {
           return request;
