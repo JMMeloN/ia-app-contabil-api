@@ -28,6 +28,7 @@ export class DbLogin implements LoginUseCase {
     const accessToken = jwt.sign(payload, this.jwtSecret, {
       expiresIn: this.jwtExpiresIn
     } as any);
+    const decodedToken = jwt.decode(accessToken) as { exp?: number } | null;
 
     // Remover senha do retorno
     const { password, ...userWithoutPassword } = user;
@@ -35,6 +36,9 @@ export class DbLogin implements LoginUseCase {
     return {
       user: userWithoutPassword,
       accessToken,
+      accessTokenExpiresAt: decodedToken?.exp
+        ? new Date(decodedToken.exp * 1000).toISOString()
+        : undefined,
     };
   }
 }

@@ -15,10 +15,13 @@ export function authMiddleware(req: AuthRequest, res: Response, next: NextFuncti
   const authHeader = req.headers.authorization;
 
   if (!authHeader) {
-    return res.status(401).json({ error: 'Token não fornecido' });
+    return res.status(401).json({ error: 'Token não fornecido', code: 'TOKEN_MISSING' });
   }
 
-  const [, token] = authHeader.split(' ');
+  const [scheme, token] = authHeader.split(' ');
+  if (scheme !== 'Bearer' || !token) {
+    return res.status(401).json({ error: 'Token inválido', code: 'TOKEN_MALFORMED' });
+  }
 
   try {
     const decoded = jwt.verify(token, env.jwtSecret) as {
@@ -29,7 +32,11 @@ export function authMiddleware(req: AuthRequest, res: Response, next: NextFuncti
 
     req.user = decoded;
     return next();
-  } catch (error) {
-    return res.status(401).json({ error: 'Token inválido' });
+  } catch (error: any) {
+    if (error?.name === 'TokenExpiredError') {
+      return res.status(401).json({ error: 'Token expirado', code: 'TOKEN_EXPIRED' });
+    }
+
+    return res.status(401).json({ error: 'Token inválido', code: 'TOKEN_INVALID' });
   }
 }

@@ -15,6 +15,10 @@ export function makeLoginUseCase() {
   return new DbLogin(userRepository, env.jwtSecret, env.jwtExpiresIn);
 }
 
+export function makeGetCurrentUserRepository() {
+  return new PrismaUserRepository();
+}
+
 export function makeUpdateProfileUseCase() {
   const userRepository = new PrismaUserRepository();
   return new DbUpdateProfile(userRepository);

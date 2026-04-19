@@ -1,6 +1,11 @@
 import { Router, Request, Response } from 'express';
 import { z } from 'zod';
-import { makeRegisterUseCase, makeLoginUseCase } from '@/main/factories/auth.factory';
+import {
+  makeRegisterUseCase,
+  makeLoginUseCase,
+  makeGetCurrentUserRepository,
+} from '@/main/factories/auth.factory';
+import { authMiddleware, AuthRequest } from '@/main/middlewares/auth.middleware';
 
 const router = Router();
 
@@ -45,6 +50,22 @@ router.post('/login', async (req: Request, res: Response) => {
       return res.status(400).json({ error: 'Dados inválidos', details: error.errors });
     }
     return res.status(401).json({ error: error.message });
+  }
+});
+
+// GET /auth/me
+router.get('/me', authMiddleware, async (req: AuthRequest, res: Response) => {
+  try {
+    const userRepository = makeGetCurrentUserRepository();
+    const user = await userRepository.findById(req.user!.userId);
+
+    if (!user) {
+      return res.status(404).json({ error: 'Usuário não encontrado' });
+    }
+
+    return res.status(200).json(user);
+  } catch (error: any) {
+    return res.status(400).json({ error: error.message });
   }
 });
 

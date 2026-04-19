@@ -8,6 +8,7 @@ export interface LoginDTO {
 export interface LoginResponse {
   user: UserModel;
   accessToken: string;
+  accessTokenExpiresAt?: string;
 }
 
 export interface LoginUseCase {
