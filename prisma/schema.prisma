@@ -98,6 +98,7 @@ model Request {
   valor           Float
   dataEmissao     DateTime
   observacoes     String?
+  cnaeCode        String?
   status          RequestStatus @default(PENDENTE)
   arquivoUrl      String?
   userId          String

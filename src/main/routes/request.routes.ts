@@ -24,6 +24,7 @@ const createRequestSchema = z.object({
   valor: z.number().positive('Valor deve ser positivo'),
   dataEmissao: z.string().transform((str) => new Date(str)),
   observacoes: z.string().optional(),
+  cnaeCode: z.string().optional(),
   companyId: z.string().uuid('ID da empresa inválido'),
   emissaoAutomatica: z.boolean().optional().default(false),
   // Tomador (payer) - compatível com legado
@@ -43,6 +44,7 @@ const updateStatusSchema = z.object({
 
 const emitInvoiceSchema = z.object({
   cityServiceCode: z.string().min(1, 'Código do serviço é obrigatório'),
+  cnaeCode: z.string().min(1, 'CNAE é obrigatório').optional(),
 });
 
 // GET /requests - Listar solicitações
@@ -192,6 +194,7 @@ router.post(
         requestId: id,
         userId: req.user!.userId,
         cityServiceCode: data.cityServiceCode,
+        cnaeCode: data.cnaeCode,
       });
 
       return res.status(200).json({

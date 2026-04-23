@@ -14,4 +14,13 @@ export const env = {
   nfeioApiKey: process.env.NFEIO_API_KEY || '',
   nfeioCompanyId: process.env.NFEIO_COMPANY_ID || '',
   nfeioBaseUrl: process.env.NFEIO_BASE_URL || 'https://api.nfe.io/v1',
+  listaCnaeUrl:
+    process.env.LISTACNAE_URL ||
+    process.env.LISTA_CNAE_URL ||
+    'https://api.listacnae.com.br/v1/todosCnaes',
+  listaCnaeBearerToken:
+    process.env.LISTACNAE_BEARER_TOKEN ||
+    process.env.LISTACNAE_TOKEN ||
+    process.env.LISTA_CNAE_TOKEN ||
+    '',
 };

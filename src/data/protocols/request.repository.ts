@@ -4,6 +4,7 @@ export interface CreateRequestData {
   valor: number;
   dataEmissao: Date;
   observacoes?: string;
+  cnaeCode?: string;
   userId: string;
   companyId: string;
   emissaoAutomatica?: boolean;

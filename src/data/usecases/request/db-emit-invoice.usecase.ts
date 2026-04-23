@@ -69,6 +69,7 @@ export class DbEmitInvoice implements EmitInvoiceUseCase {
       invoice = await this.nfeioService.emitServiceInvoice({
         companyId: company.nfeioCompanyId,
         cityServiceCode: data.cityServiceCode || company.cityServiceCode || '0',
+        cnaeCode: data.cnaeCode || request.cnaeCode || undefined,
         description: request.observacoes || 'Serviços prestados',
         servicesAmount: request.valor,
         borrower,

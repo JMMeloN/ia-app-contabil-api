@@ -4,6 +4,7 @@ export interface EmitInvoiceDTO {
   requestId: string;
   userId: string;
   cityServiceCode?: string; // Opcional, usa o da empresa se não informado
+  cnaeCode?: string;
 }
 
 export interface EmitInvoiceUseCase {

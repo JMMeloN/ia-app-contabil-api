@@ -5,6 +5,7 @@ export interface RequestModel {
   valor: number;
   dataEmissao: Date;
   observacoes?: string | null;
+  cnaeCode?: string | null;
   status: RequestStatus;
   arquivoUrl?: string | null;
   userId: string;
