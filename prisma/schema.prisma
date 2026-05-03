@@ -158,3 +158,13 @@ model Nbs {
 
   @@map("nbs")
 }
+
+model Cnae {
+  id            String   @id @default(uuid())
+  codCnae       String   @unique
+  descricaoCnae String
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@map("cnaes")
+}
