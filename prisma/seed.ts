@@ -47,8 +47,10 @@ async function main() {
   console.log('✅ Usuários criados');
 
   // Criar empresas para o cliente
-  const empresa1 = await prisma.company.create({
-    data: {
+  const empresa1 = await prisma.company.upsert({
+    where: { userId_cnpj: { userId: cliente.id, cnpj: '12.345.678/0001-90' } },
+    update: {},
+    create: {
       nome: 'Empresa ABC Ltda',
       cnpj: '12.345.678/0001-90',
       email: 'contato@abc.com.br',
@@ -61,8 +63,10 @@ async function main() {
     },
   });
 
-  const empresa2 = await prisma.company.create({
-    data: {
+  const empresa2 = await prisma.company.upsert({
+    where: { userId_cnpj: { userId: cliente.id, cnpj: '98.765.432/0001-10' } },
+    update: {},
+    create: {
       nome: 'Tech Solutions SA',
       cnpj: '98.765.432/0001-10',
       email: 'financeiro@techsolutions.com',
@@ -77,41 +81,40 @@ async function main() {
 
   console.log('✅ Empresas criadas');
 
-  // Criar solicitações
-  await prisma.request.create({
-    data: {
-      valor: 2500.0,
-      dataEmissao: new Date('2024-01-15'),
-      observacoes: 'Nota fiscal de serviços de consultoria',
-      status: 'PENDENTE',
-      userId: cliente.id,
-      companyId: empresa1.id,
-    },
-  });
-
-  await prisma.request.create({
-    data: {
-      valor: 3200.5,
-      dataEmissao: new Date('2024-01-20'),
-      observacoes: '',
-      status: 'PROCESSADA',
-      arquivoUrl: 'https://exemplo.com/notas/nota-002.pdf',
-      processadoEm: new Date('2024-01-13'),
-      userId: cliente.id,
-      companyId: empresa2.id,
-    },
-  });
-
-  await prisma.request.create({
-    data: {
-      valor: 1800.0,
-      dataEmissao: new Date('2024-01-18'),
-      observacoes: 'Urgente - prazo até 20/01',
-      status: 'PENDENTE',
-      userId: cliente.id,
-      companyId: empresa1.id,
-    },
-  });
+  // Criar solicitações apenas se não houver nenhuma para este usuário
+  const requestsExistentes = await prisma.request.count({ where: { userId: cliente.id } });
+  if (requestsExistentes === 0) {
+    await prisma.request.createMany({
+      data: [
+        {
+          valor: 2500.0,
+          dataEmissao: new Date('2024-01-15'),
+          observacoes: 'Nota fiscal de serviços de consultoria',
+          status: 'PENDENTE',
+          userId: cliente.id,
+          companyId: empresa1.id,
+        },
+        {
+          valor: 3200.5,
+          dataEmissao: new Date('2024-01-20'),
+          observacoes: '',
+          status: 'PROCESSADA',
+          arquivoUrl: 'https://exemplo.com/notas/nota-002.pdf',
+          processadoEm: new Date('2024-01-13'),
+          userId: cliente.id,
+          companyId: empresa2.id,
+        },
+        {
+          valor: 1800.0,
+          dataEmissao: new Date('2024-01-18'),
+          observacoes: 'Urgente - prazo até 20/01',
+          status: 'PENDENTE',
+          userId: cliente.id,
+          companyId: empresa1.id,
+        },
+      ],
+    });
+  }
 
   console.log('✅ Solicitações criadas');
 
