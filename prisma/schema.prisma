@@ -142,3 +142,19 @@ model Payer {
   @@unique([userId, document])
   @@map("payers")
 }
+
+model Nbs {
+  id              String   @id @default(uuid())
+  nbs             String   @unique 
+  descricaoNbs    String   
+  psOnerosa       Boolean? 
+  adqExterior     Boolean? 
+  indop           String   
+  localIncidencia String   
+  cClassTrib      String   
+  nomeClassTrib   String   
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@map("nbs")
+}

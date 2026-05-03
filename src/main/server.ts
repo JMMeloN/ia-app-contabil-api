@@ -12,6 +12,7 @@ import uploadRoutes from './routes/upload.routes';
 import seedRoutes from './routes/seed.routes';
 import payerRoutes from './routes/payer.routes';
 import cnaeRoutes from './routes/cnae.routes';
+import nbsRoutes from './routes/nbs.routes';
 
 const app = express();
 
@@ -73,6 +74,7 @@ app.use('/upload', uploadRoutes);
 app.use('/seed', seedRoutes);
 app.use('/payers', payerRoutes);
 app.use('/cnaes', cnaeRoutes);
+app.use('/nbs', nbsRoutes);
 
 // Health check
 app.get('/health', (req, res) => {
