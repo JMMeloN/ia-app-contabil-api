@@ -58,7 +58,13 @@ export class DbCreateRequest implements CreateRequestUseCase {
 
     // Criar solicitação no banco local
     const request = await this.requestRepository.create({
-      ...data,
+      valor: data.valor,
+      dataEmissao: data.dataEmissao,
+      observacoes: data.observacoes,
+      cnaeCode: data.cnaeCode,
+      userId: data.userId,
+      companyId: data.companyId,
+      emissaoAutomatica: data.emissaoAutomatica,
       payerId: payer.id,
       cityServiceCode: company.cityServiceCode || undefined,
       tomadorNome: borrower.name,
