@@ -4,6 +4,8 @@ import {
   makeRegisterUseCase,
   makeLoginUseCase,
   makeGetCurrentUserRepository,
+  makeRefreshTokenUseCase,
+  makeLogoutUseCase,
 } from '@/main/factories/auth.factory';
 import { authMiddleware, AuthRequest } from '@/main/middlewares/auth.middleware';
 
@@ -19,6 +21,10 @@ const registerSchema = z.object({
 const loginSchema = z.object({
   email: z.string().email('Email inválido'),
   password: z.string().min(1, 'Senha é obrigatória'),
+});
+
+const refreshTokenSchema = z.object({
+  refreshToken: z.string().min(1, 'Refresh token é obrigatório'),
 });
 
 // POST /auth/register
@@ -45,6 +51,38 @@ router.post('/login', async (req: Request, res: Response) => {
     const result = await loginUseCase.execute(data);
 
     return res.status(200).json(result);
+  } catch (error: any) {
+    if (error.name === 'ZodError') {
+      return res.status(400).json({ error: 'Dados inválidos', details: error.errors });
+    }
+    return res.status(401).json({ error: error.message });
+  }
+});
+
+// POST /auth/refresh
+router.post('/refresh', async (req: Request, res: Response) => {
+  try {
+    const data = refreshTokenSchema.parse(req.body);
+    const refreshTokenUseCase = makeRefreshTokenUseCase();
+    const result = await refreshTokenUseCase.execute(data);
+
+    return res.status(200).json(result);
+  } catch (error: any) {
+    if (error.name === 'ZodError') {
+      return res.status(400).json({ error: 'Dados inválidos', details: error.errors });
+    }
+    return res.status(401).json({ error: error.message });
+  }
+});
+
+// POST /auth/logout
+router.post('/logout', async (req: Request, res: Response) => {
+  try {
+    const data = refreshTokenSchema.parse(req.body);
+    const logoutUseCase = makeLogoutUseCase();
+    await logoutUseCase.execute(data);
+
+    return res.status(200).json({ message: 'Logout realizado com sucesso' });
   } catch (error: any) {
     if (error.name === 'ZodError') {
       return res.status(400).json({ error: 'Dados inválidos', details: error.errors });

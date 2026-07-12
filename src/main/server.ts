@@ -3,7 +3,6 @@ import cors from 'cors';
 import type { CorsOptions } from 'cors';
 import { env } from './config/env';
 
-// Routes
 import authRoutes from './routes/auth.routes';
 import companyRoutes from './routes/company.routes';
 import requestRoutes from './routes/request.routes';
@@ -58,14 +57,10 @@ const corsOptions: CorsOptions = {
   credentials: true,
 };
 
-// Middlewares
 app.use(cors(corsOptions));
 app.use(express.json());
-
-// Static files (uploads)
 app.use('/files', express.static('uploads'));
 
-// Routes
 app.use('/auth', authRoutes);
 app.use('/companies', companyRoutes);
 app.use('/requests', requestRoutes);
@@ -76,12 +71,10 @@ app.use('/payers', payerRoutes);
 app.use('/cnaes', cnaeRoutes);
 app.use('/nbs', nbsRoutes);
 
-// Health check
 app.get('/health', (req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
 
-// Start server
 app.listen(env.port, () => {
   console.log(`🚀 Server is running on port ${env.port}`);
   console.log(`📝 Environment: ${env.nodeEnv}`);

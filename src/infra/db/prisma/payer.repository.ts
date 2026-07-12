@@ -22,11 +22,18 @@ export class PrismaPayerRepository implements PayerRepository {
     });
   }
 
-  async findByUserIdAndDocument(userId: string, document: string): Promise<PayerModel | null> {
+  async findByCompanyId(companyId: string): Promise<PayerModel[]> {
+    return prisma.payer.findMany({
+      where: { companyId },
+      orderBy: { createdAt: 'desc' },
+    });
+  }
+
+  async findByCompanyIdAndDocument(companyId: string, document: string): Promise<PayerModel | null> {
     return prisma.payer.findUnique({
       where: {
-        userId_document: {
-          userId,
+        companyId_document: {
+          companyId,
           document,
         },
       },

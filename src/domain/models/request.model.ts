@@ -1,4 +1,4 @@
-export type RequestStatus = 'PENDENTE' | 'PROCESSADA' | 'CANCELADA';
+export type RequestStatus = 'PENDENTE' | 'PROCESSANDO' | 'PROCESSADA' | 'FALHA' | 'CANCELADA';
 
 export interface RequestModel {
   id: string;
@@ -8,14 +8,26 @@ export interface RequestModel {
   cnaeCode?: string | null;
   status: RequestStatus;
   arquivoUrl?: string | null;
+  xmlUrl?: string | null;
+  cancelamentoXmlUrl?: string | null;
   userId: string;
   companyId: string;
-  payerId?: string | null;
+  payerId: string;
+  cityServiceCode?: string | null;
+  numeroNota?: string | null;
+  codigoVerificacao?: string | null;
+  errorMessage?: string | null;
+  externalId?: string | null;
   tomadorNome?: string | null;
   tomadorDocumento?: string | null;
   tomadorEmail?: string | null;
+  tomadorEndereco?: string | null;
+  tomadorCidade?: string | null;
+  tomadorEstado?: string | null;
+  tomadorCep?: string | null;
   nfeioInvoiceId?: string | null;
   processadoEm?: Date | null;
+  canceladoEm?: Date | null;
   emissaoAutomatica: boolean;
   createdAt: Date;
   updatedAt: Date;

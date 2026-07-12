@@ -8,17 +8,29 @@ export interface CreateRequestData {
   userId: string;
   companyId: string;
   emissaoAutomatica?: boolean;
-  payerId?: string;
+  payerId: string;
+  cityServiceCode?: string;
   tomadorNome?: string;
   tomadorDocumento?: string;
   tomadorEmail?: string;
+  tomadorEndereco?: string;
+  tomadorCidade?: string;
+  tomadorEstado?: string;
+  tomadorCep?: string;
+  externalId?: string;
 }
 
 export interface UpdateRequestStatusData {
   status: RequestStatus;
   arquivoUrl?: string;
+  xmlUrl?: string;
+  cancelamentoXmlUrl?: string;
   processadoEm?: Date;
+  canceladoEm?: Date;
   nfeioInvoiceId?: string;
+  numeroNota?: string;
+  codigoVerificacao?: string;
+  errorMessage?: string;
 }
 
 export interface FindRequestsFilters {

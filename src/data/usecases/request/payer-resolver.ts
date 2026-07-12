@@ -48,7 +48,14 @@ export function resolveBorrower(
   }
 
   return {
-    type: digits.length > 11 ? 'LegalEntity' : 'NaturalPerson',
+    type:
+      data.payer?.type === 'NATURAL_PERSON'
+        ? 'NaturalPerson'
+        : data.payer?.type === 'LEGAL_ENTITY'
+          ? 'LegalEntity'
+          : digits.length > 11
+            ? 'LegalEntity'
+            : 'NaturalPerson',
     federalTaxNumber: Number(digits),
     name: sourceName,
     email: sourceEmail || company.email,

@@ -32,14 +32,15 @@ export class DbUpdateCompany implements UpdateCompanyUseCase {
     // Tentar atualizar no NFe.io se tiver nfeioCompanyId
     if (company.nfeioCompanyId) {
       try {
+        const enderecoCompleto = data.endereco || company.endereco || '';
         await this.nfeioService.updateCompany(company.nfeioCompanyId, {
           name: data.nome || company.nome,
           federalTaxNumber: Number((data.cnpj || company.cnpj).replace(/\D/g, '')),
           email: data.email || company.email,
           address: {
             postalCode: (data.cep || company.cep).replace(/\D/g, ''),
-            street: (data.endereco || company.endereco).split(',')[0],
-            number: (data.endereco || company.endereco).split(',')[1]?.trim() || 'S/N',
+            street: enderecoCompleto.split(',')[0] || 'Não informado',
+            number: enderecoCompleto.split(',')[1]?.trim() || 'S/N',
             district: 'Centro',
             city: {
               code: '3550308',

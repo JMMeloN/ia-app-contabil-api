@@ -12,13 +12,13 @@ async function main() {
     where: { email: 'iaappcontabil@gmail.com' },
     update: {
       password: hashedPassword,
-      role: 'OPERATIONAL',
+      role: 'OPERACIONAL',
     },
     create: {
       email: 'iaappcontabil@gmail.com',
       password: hashedPassword,
       name: 'Operacional IAContabil',
-      role: 'OPERATIONAL',
+      role: 'OPERACIONAL',
     },
   });
 

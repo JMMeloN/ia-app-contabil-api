@@ -8,7 +8,7 @@ export interface CreateRequestDTO {
   userId: string;
   companyId: string;
   emissaoAutomatica?: boolean;
-  payerId?: string;
+  payerId: string;
   // Compatibilidade com payload atual
   tomadorNome?: string;
   tomadorDocumento?: string;

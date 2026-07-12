@@ -18,7 +18,8 @@
     "prisma:deploy": "prisma migrate deploy",
     "test": "vitest run",
     "test:watch": "vitest",
-    "test:coverage": "vitest run --coverage"
+    "test:coverage": "vitest run --coverage",
+    "cnae:import": "tsx scripts/import-cnaes.ts"
   },
   "keywords": [
     "nodejs",
@@ -52,6 +53,7 @@
     "tsc-alias": "^1.8.16",
     "tsconfig-paths": "^4.2.0",
     "typescript": "^5.9.3",
+    "xlsx": "^0.18.5",
     "zod": "^4.2.0"
   },
   "devDependencies": {

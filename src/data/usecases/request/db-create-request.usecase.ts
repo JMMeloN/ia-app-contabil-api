@@ -11,6 +11,7 @@ import { PayerRepository } from '@/data/protocols/payer.repository';
 import { resolveBorrower } from './payer-resolver';
 import { resolveInvoiceFileUrl } from './invoice-url-resolver';
 import axios from 'axios';
+import { randomUUID } from 'crypto';
 
 export class DbCreateRequest implements CreateRequestUseCase {
   constructor(
@@ -39,12 +40,13 @@ export class DbCreateRequest implements CreateRequestUseCase {
       throw new Error('Usuário não encontrado');
     }
 
-    let payer = null;
-    if (data.payerId) {
-      payer = await this.payerRepository.findById(data.payerId);
-      if (!payer || payer.userId !== data.userId) {
-        throw new Error('Tomador inválido para este usuário');
-      }
+    const payer = await this.payerRepository.findById(data.payerId);
+    if (!payer || payer.userId !== data.userId) {
+      throw new Error('Tomador inválido para este usuário');
+    }
+
+    if (payer.companyId !== company.id) {
+      throw new Error('Tomador inválido para esta empresa');
     }
 
     const borrower = resolveBorrower(company, {
@@ -57,10 +59,16 @@ export class DbCreateRequest implements CreateRequestUseCase {
     // Criar solicitação no banco local
     const request = await this.requestRepository.create({
       ...data,
-      payerId: payer?.id,
+      payerId: payer.id,
+      cityServiceCode: company.cityServiceCode || undefined,
       tomadorNome: borrower.name,
       tomadorDocumento: String(borrower.federalTaxNumber),
       tomadorEmail: borrower.email,
+      tomadorEndereco: payer.endereco || undefined,
+      tomadorCidade: payer.cidade || undefined,
+      tomadorEstado: payer.estado || undefined,
+      tomadorCep: payer.cep || undefined,
+      externalId: randomUUID(),
     });
 
     // Se emissão automática estiver habilitada E a empresa tiver configuração NFe.io

@@ -1,6 +1,3 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -10,7 +7,6 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-// Enums
 enum UserRole {
   CLIENTE
   OPERACIONAL
@@ -19,140 +15,200 @@ enum UserRole {
 
 enum RequestStatus {
   PENDENTE
+  PROCESSANDO
   PROCESSADA
+  FALHA
   CANCELADA
 }
 
-// Models
+enum PayerType {
+  LEGAL_ENTITY
+  NATURAL_PERSON
+}
+
+enum SyncStatus {
+  PENDING
+  SYNCED
+  FAILED
+}
+
 model User {
   id        String   @id @default(uuid())
   email     String   @unique
   password  String
   name      String
   role      UserRole @default(CLIENTE)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
 
-  // Relations
-  companies Company[]
-  requests  Request[]
-  payers    Payer[]
+  companies    Company[]
+  requests     Request[]
+  payers       Payer[]
+  authSessions AuthSession[]
 
   @@map("users")
 }
 
 model Company {
-  id              String   @id @default(uuid())
-  nome            String
-  nomeFantasia    String?
-  cnpj            String
-  email           String
-  telefone        String
-  endereco        String   // Campo legado (string completa)
-  rua             String?
-  numero          String?
-  bairro          String?
-  complemento     String?
-  cidade          String
-  estado          String   @db.VarChar(2)
-  cep             String
-  dataAbertura    DateTime?
-  regimeTributario String?
-  naturezaJuridica String?
-  inscricaoMunicipal String?
-  inscricaoEstadual  String?
-  userId          String
-  
-  // Campos técnicos avançados NFe.io
-  regimeEspecialTributacao    String?  // specialTaxRegime
-  numeroJuntaComercial        BigInt?  // companyRegistryNumber
-  rpsSerie                    String?  // rpsSerialNumber
-  rpsNumero                   BigInt?  // rpsNumber
-  aliquotaIss                 Float?   // issRate
-  determinacaoImpostoFederal  String?  // federalTaxDetermination
-  determinacaoImpostoMunicipal String? // municipalTaxDetermination
-  prefeituraLogin             String?  // loginName
-  prefeituraSenha             String?  // loginPassword
-  valorAutorizacao            String?  // authIssueValue
-  
-  // Integração e Status
-  nfeioCompanyId  String?  @unique
-  cityServiceCode String?
-  statusFiscal    String?
-  ambiente        String?  @default("Development")
-  
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  id                 String    @id @default(uuid())
+  nome               String    @map("legal_name")
+  nomeFantasia       String?   @map("trade_name")
+  cnpj               String    @map("federal_tax_number")
+  email              String
+  telefone           String?   @map("phone")
+  endereco           String?   @map("full_address")
+  rua                String?   @map("street")
+  numero             String?   @map("street_number")
+  bairro             String?   @map("district")
+  complemento        String?   @map("additional_information")
+  cidade             String    @map("city_name")
+  codigoCidade       String?   @map("city_code")
+  estado             String    @map("state_code") @db.VarChar(2)
+  cep                String    @map("postal_code")
+  pais               String?   @default("BRA") @map("country_code")
+  dataAbertura       DateTime? @map("openning_date")
+  regimeTributario   String?   @map("tax_regime")
+  naturezaJuridica   String?   @map("legal_nature")
+  inscricaoMunicipal String?   @map("municipal_tax_number")
+  inscricaoEstadual  String?   @map("regional_tax_number")
+  userId             String    @map("user_id")
 
-  // Relations
+  regimeEspecialTributacao     String?   @map("special_tax_regime")
+  numeroJuntaComercial         BigInt?   @map("company_registry_number")
+  rpsSerie                     String?   @map("rps_serial_number")
+  rpsNumero                    BigInt?   @map("rps_number")
+  aliquotaIss                  Float?    @map("iss_rate")
+  determinacaoImpostoFederal   String?   @map("federal_tax_determination")
+  determinacaoImpostoMunicipal String?   @map("municipal_tax_determination")
+  prefeituraLogin              String?   @map("city_hall_login")
+  prefeituraSenha              String?   @map("city_hall_password")
+  valorAutorizacao             String?   @map("authorization_issue_value")
+  cityServiceCode              String?   @map("default_city_service_code")
+  certificateThumbprint        String?   @map("certificate_thumbprint")
+  certificateExpiresAt         DateTime? @map("certificate_expires_at")
+  certificateStatus            String?   @map("certificate_status")
+
+  nfeioCompanyId String?    @unique @map("nfeio_company_id")
+  syncStatus     SyncStatus @default(PENDING) @map("sync_status")
+  statusFiscal   String?    @map("fiscal_status")
+  ambiente       String?    @default("Development") @map("environment")
+  createdAt      DateTime   @default(now()) @map("created_at")
+  updatedAt      DateTime   @updatedAt @map("updated_at")
+
   user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   requests Request[]
+  payers   Payer[]
 
-  // Constraint: Um usuário não pode cadastrar o mesmo CNPJ duas vezes
   @@unique([userId, cnpj])
   @@map("companies")
 }
 
-model Request {
-  id              String        @id @default(uuid())
-  valor           Float
-  dataEmissao     DateTime
-  observacoes     String?
-  cnaeCode        String?
-  status          RequestStatus @default(PENDENTE)
-  arquivoUrl      String?
-  userId          String
-  companyId       String
-  payerId         String?
-  
-  // Dados do Tomador (quem recebe a nota)
-  tomadorNome      String?
-  tomadorDocumento String? // CPF ou CNPJ
-  tomadorEmail     String?
-  
-  // Integração NFe.io
-  nfeioInvoiceId   String?  // ID da nota no nfe.io
-  
-  processadoEm    DateTime?
-  emissaoAutomatica Boolean     @default(false)
-  createdAt       DateTime      @default(now())
-  updatedAt       DateTime      @updatedAt
-
-  // Relations
-  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
-  company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  payer   Payer?  @relation(fields: [payerId], references: [id], onDelete: SetNull)
-
-  @@map("requests")
-}
-
 model Payer {
-  id        String   @id @default(uuid())
-  name      String
-  document  String
-  email     String?
-  userId    String
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id                 String     @id @default(uuid())
+  name               String     @map("name")
+  document           String     @map("federal_tax_number")
+  type               PayerType  @default(LEGAL_ENTITY) @map("person_type")
+  email              String?    @map("email")
+  phone              String?    @map("phone")
+  municipalTaxNumber String?    @map("municipal_tax_number")
+  stateTaxNumber     String?    @map("state_tax_number")
+  endereco           String?    @map("full_address")
+  rua                String?    @map("street")
+  numero             String?    @map("street_number")
+  bairro             String?    @map("district")
+  complemento        String?    @map("additional_information")
+  cidade             String?    @map("city_name")
+  codigoCidade       String?    @map("city_code")
+  estado             String?    @map("state_code") @db.VarChar(2)
+  cep                String?    @map("postal_code")
+  pais               String?    @default("BRA") @map("country_code")
+  userId             String     @map("user_id")
+  companyId          String     @map("company_id")
+  nfeioPayerId       String?    @map("nfeio_payer_id")
+  syncStatus         SyncStatus @default(PENDING) @map("sync_status")
+  createdAt          DateTime   @default(now()) @map("created_at")
+  updatedAt          DateTime   @updatedAt @map("updated_at")
 
-  // Relations
   user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  company  Company   @relation(fields: [companyId], references: [id], onDelete: Cascade)
   requests Request[]
 
-  @@unique([userId, document])
-  @@map("payers")
+  @@unique([companyId, document])
+  @@index([userId])
+  @@map("service_takers")
+}
+
+model Request {
+  id                 String        @id @default(uuid())
+  valor              Float         @map("services_amount")
+  dataEmissao        DateTime      @map("issue_date")
+  observacoes        String?       @map("service_description")
+  status             RequestStatus @default(PENDENTE)
+  arquivoUrl         String?       @map("pdf_url")
+  xmlUrl             String?       @map("xml_url")
+  cancelamentoXmlUrl String?       @map("cancellation_xml_url")
+  userId             String        @map("user_id")
+  companyId          String        @map("company_id")
+  payerId            String        @map("service_taker_id")
+  cityServiceCode    String?       @map("city_service_code")
+  numeroNota         String?       @map("invoice_number")
+  codigoVerificacao  String?       @map("verification_code")
+  errorMessage       String?       @map("error_message")
+  externalId         String?       @unique @map("external_id")
+  cnaeCode           String?       @map("cnae_code")
+
+  tomadorNome      String? @map("borrower_name")
+  tomadorDocumento String? @map("borrower_document")
+  tomadorEmail     String? @map("borrower_email")
+  tomadorEndereco  String? @map("borrower_full_address")
+  tomadorCidade    String? @map("borrower_city_name")
+  tomadorEstado    String? @map("borrower_state_code")
+  tomadorCep       String? @map("borrower_postal_code")
+
+  nfeioInvoiceId    String?   @unique @map("nfeio_invoice_id")
+  processadoEm      DateTime? @map("processed_at")
+  canceladoEm       DateTime? @map("cancelled_at")
+  emissaoAutomatica Boolean   @default(false) @map("auto_issue")
+  createdAt         DateTime  @default(now()) @map("created_at")
+  updatedAt         DateTime  @updatedAt @map("updated_at")
+
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  payer   Payer   @relation(fields: [payerId], references: [id], onDelete: Restrict)
+
+  @@index([userId, status])
+  @@index([companyId, status])
+  @@index([payerId])
+  @@map("invoice_requests")
+}
+
+model AuthSession {
+  id               String    @id @default(uuid())
+  userId           String    @map("user_id")
+  refreshTokenHash String    @unique @map("refresh_token_hash")
+  userAgent        String?   @map("user_agent")
+  ipAddress        String?   @map("ip_address")
+  expiresAt        DateTime  @map("expires_at")
+  revokedAt        DateTime? @map("revoked_at")
+  createdAt        DateTime  @default(now()) @map("created_at")
+  updatedAt        DateTime  @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, revokedAt])
+  @@map("auth_sessions")
 }
 
 model Nbs {
   id              String   @id @default(uuid())
-  nbs             String   @unique 
-  descricaoNbs    String   
-  psOnerosa       Boolean? 
-  adqExterior     Boolean? 
-  indop           String   
-  localIncidencia String   
-  cClassTrib      String   
-  nomeClassTrib   String   
+  nbs             String   @unique
+  descricaoNbs    String
+  psOnerosa       Boolean?
+  adqExterior     Boolean?
+  indop           String
+  localIncidencia String
+  cClassTrib      String
+  nomeClassTrib   String
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 

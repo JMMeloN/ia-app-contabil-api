@@ -5,7 +5,8 @@ import {
   NFEIOCompanyInput, 
   NFEIOCompanyResponse, 
   NFEIOServiceProtocol,
-  NFEIOServiceInvoiceInput
+  NFEIOServiceInvoiceInput,
+  NFEIOPersonInput,
 } from '@/data/protocols/nfeio.service';
 
 export class NFEIOService implements NFEIOServiceProtocol {
@@ -14,8 +15,17 @@ export class NFEIOService implements NFEIOServiceProtocol {
 
   constructor(apiKey?: string) {
     const rawKey = apiKey || env.nfeioApiKey;
-    this.apiKey = rawKey.replace(/['"]+/g, '').trim();
+    this.apiKey = this.normalizeAuthorizationHeader(rawKey);
     this.baseUrl = env.nfeioBaseUrl;
+  }
+
+  private normalizeAuthorizationHeader(rawKey: string) {
+    const sanitizedKey = rawKey.replace(/['"]+/g, '').trim();
+    if (!sanitizedKey) return '';
+
+    return /^basic\s+/i.test(sanitizedKey)
+      ? sanitizedKey
+      : `Basic ${sanitizedKey}`;
   }
 
   private getRequestConfig(path: string) {
@@ -138,6 +148,74 @@ export class NFEIOService implements NFEIOServiceProtocol {
       return response.data;
     } catch (error: any) {
       this.handleError('uploadCertificate', error);
+      throw error;
+    }
+  }
+
+  async createLegalPerson(companyId: string, data: NFEIOPersonInput): Promise<any> {
+    const { url, headers } = this.getRequestConfig(`/companies/${companyId}/legalpeople`);
+    try {
+      const response = await axios.post(url, data, { headers });
+      return response.data;
+    } catch (error: any) {
+      this.handleError('createLegalPerson', error);
+      throw error;
+    }
+  }
+
+  async updateLegalPerson(companyId: string, personId: string, data: Partial<NFEIOPersonInput>): Promise<any> {
+    const { url, headers } = this.getRequestConfig(`/companies/${companyId}/legalpeople/${personId}`);
+    try {
+      const response = await axios.put(url, data, { headers });
+      return response.data;
+    } catch (error: any) {
+      this.handleError('updateLegalPerson', error);
+      throw error;
+    }
+  }
+
+  async findLegalPersonByTaxNumber(companyId: string, federalTaxNumber: string): Promise<any | undefined> {
+    const { url, headers } = this.getRequestConfig(`/companies/${companyId}/legalpeople`);
+    try {
+      const response = await axios.get(url, { headers });
+      const items = response.data?.legalPeople || response.data?.data || [];
+      return items.find((item: any) => String(item.federalTaxNumber) === federalTaxNumber);
+    } catch (error: any) {
+      this.handleError('findLegalPersonByTaxNumber', error);
+      throw error;
+    }
+  }
+
+  async createNaturalPerson(companyId: string, data: NFEIOPersonInput): Promise<any> {
+    const { url, headers } = this.getRequestConfig(`/companies/${companyId}/naturalpeople`);
+    try {
+      const response = await axios.post(url, data, { headers });
+      return response.data;
+    } catch (error: any) {
+      this.handleError('createNaturalPerson', error);
+      throw error;
+    }
+  }
+
+  async updateNaturalPerson(companyId: string, personId: string, data: Partial<NFEIOPersonInput>): Promise<any> {
+    const { url, headers } = this.getRequestConfig(`/companies/${companyId}/naturalpeople/${personId}`);
+    try {
+      const response = await axios.put(url, data, { headers });
+      return response.data;
+    } catch (error: any) {
+      this.handleError('updateNaturalPerson', error);
+      throw error;
+    }
+  }
+
+  async findNaturalPersonByTaxNumber(companyId: string, federalTaxNumber: string): Promise<any | undefined> {
+    const { url, headers } = this.getRequestConfig(`/companies/${companyId}/naturalpeople`);
+    try {
+      const response = await axios.get(url, { headers });
+      const items = response.data?.naturalPeople || response.data?.data || [];
+      return items.find((item: any) => String(item.federalTaxNumber) === federalTaxNumber);
+    } catch (error: any) {
+      this.handleError('findNaturalPersonByTaxNumber', error);
       throw error;
     }
   }

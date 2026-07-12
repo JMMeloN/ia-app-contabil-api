@@ -27,8 +27,7 @@ const createRequestSchema = z.object({
   cnaeCode: z.string().optional(),
   companyId: z.string().uuid('ID da empresa inválido'),
   emissaoAutomatica: z.boolean().optional().default(false),
-  // Tomador (payer) - compatível com legado
-  payerId: z.string().uuid('ID do tomador inválido').optional(),
+  payerId: z.string().uuid('ID do tomador inválido'),
   payerName: z.string().optional(),
   payerDocument: z.string().optional(),
   payerEmail: z.string().email('Email do tomador inválido').optional().or(z.literal('')),
