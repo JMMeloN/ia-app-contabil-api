@@ -5,9 +5,9 @@ export interface CreateRequestData {
   dataEmissao: Date;
   observacoes?: string;
   cnaeCode?: string;
+  issRate?: number;
   userId: string;
   companyId: string;
-  emissaoAutomatica?: boolean;
   payerId: string;
   cityServiceCode?: string;
   tomadorNome?: string;

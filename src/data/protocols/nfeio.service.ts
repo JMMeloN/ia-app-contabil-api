@@ -64,7 +64,9 @@ export interface NFEIOServiceInvoiceInput {
   companyId: string;
   externalId?: string;
   cityServiceCode: string;
+  federalServiceCode?: string;
   cnaeCode?: string;
+  issRate?: number;
   description: string;
   servicesAmount: number;
   borrower: {

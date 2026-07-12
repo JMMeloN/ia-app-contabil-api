@@ -5,9 +5,9 @@ export interface CreateRequestDTO {
   dataEmissao: Date;
   observacoes?: string;
   cnaeCode?: string;
+  issRate?: number;
   userId: string;
   companyId: string;
-  emissaoAutomatica?: boolean;
   payerId: string;
   // Compatibilidade com payload atual
   tomadorNome?: string;

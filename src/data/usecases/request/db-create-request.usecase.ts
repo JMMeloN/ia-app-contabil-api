@@ -4,7 +4,6 @@ import { RequestRepository } from '@/data/protocols/request.repository';
 import { CompanyRepository } from '@/data/protocols/company.repository';
 import { UserRepository } from '@/data/protocols/user.repository';
 import { EmailService } from '@/infra/email/resend-email-service';
-import { novaSolicitacaoAdminEmailTemplate } from '@/infra/email/templates/nova-solicitacao-email';
 import { NFEIOService } from '@/infra/nfeio/nfeio.service';
 import { notaProcessadaEmailTemplate } from '@/infra/email/templates/nota-processada-email';
 import { PayerRepository } from '@/data/protocols/payer.repository';
@@ -49,6 +48,18 @@ export class DbCreateRequest implements CreateRequestUseCase {
       throw new Error('Tomador inválido para esta empresa');
     }
 
+    if (!company.nfeioCompanyId) {
+      throw new Error('Empresa não vinculada ao NFe.io.');
+    }
+
+    if (!company.cityServiceCode) {
+      throw new Error('Empresa sem código de serviço municipal configurado.');
+    }
+
+    if (typeof data.issRate !== 'number' || Number.isNaN(data.issRate)) {
+      throw new Error('Alíquota ISS é obrigatória.');
+    }
+
     const borrower = resolveBorrower(company, {
       payer,
       tomadorNome: data.tomadorNome,
@@ -62,9 +73,9 @@ export class DbCreateRequest implements CreateRequestUseCase {
       dataEmissao: data.dataEmissao,
       observacoes: data.observacoes,
       cnaeCode: data.cnaeCode,
+      issRate: data.issRate,
       userId: data.userId,
       companyId: data.companyId,
-      emissaoAutomatica: data.emissaoAutomatica,
       payerId: payer.id,
       cityServiceCode: company.cityServiceCode || undefined,
       tomadorNome: borrower.name,
@@ -76,105 +87,75 @@ export class DbCreateRequest implements CreateRequestUseCase {
       tomadorCep: payer.cep || undefined,
       externalId: randomUUID(),
     });
-
-    // Se emissão automática estiver habilitada E a empresa tiver configuração NFe.io
-    if (data.emissaoAutomatica && company.nfeioCompanyId && company.cityServiceCode) {
-      try {
-        console.log('Emitindo nota automaticamente para:', company.nome);
-
-        const invoice = await this.nfeioService.emitServiceInvoice({
-          companyId: company.nfeioCompanyId!,
-          cityServiceCode: company.cityServiceCode,
-          cnaeCode: data.cnaeCode,
-          description: data.observacoes || 'Serviços prestados',
-          servicesAmount: data.valor,
-          borrower,
-        });
-
-        // Atualizar solicitação com dados da nota
-        const nfeioId = (invoice as any).id || (invoice as any).companies?.id;
-        let fileUrl = resolveInvoiceFileUrl(invoice);
-
-        if (!fileUrl && nfeioId) {
-          try {
-            const fullInvoice = await this.nfeioService.getServiceInvoice(company.nfeioCompanyId!, nfeioId);
-            fileUrl = resolveInvoiceFileUrl(fullInvoice);
-          } catch (error: any) {
-            console.error('Falha ao buscar PDF da nota na NFE.io:', error.message);
-          }
-        }
-
-        await this.requestRepository.updateStatus(request.id, {
-          status: 'PROCESSADA',
-          arquivoUrl: fileUrl,
-          processadoEm: new Date(),
-          nfeioInvoiceId: nfeioId,
-        });
-
-        let attachments: Array<{ filename: string; content: Buffer }> | undefined;
-        if (fileUrl?.startsWith('http')) {
-          try {
-            const pdfResponse = await axios.get(fileUrl, {
-              responseType: 'arraybuffer',
-              timeout: 30000,
-              maxContentLength: 10 * 1024 * 1024,
-            });
-            attachments = [
-              {
-                filename: `NF-${request.id.substring(0, 8).toUpperCase()}.pdf`,
-                content: Buffer.from(pdfResponse.data),
-              },
-            ];
-          } catch (error: any) {
-            console.error('Falha ao baixar PDF para anexo no email:', error.message);
-          }
-        }
-
-        // Enviar email para o cliente com a nota
-        await this.emailService.send({
-          to: user.email,
-          subject: `✅ Nota Fiscal Emitida - ${company.nome}`,
-          html: notaProcessadaEmailTemplate(
-            user.name,
-            company.nome,
-            data.valor,
-            (invoice as any).number || 'Em processamento',
-            fileUrl
-          ),
-          attachments,
-        });
-
-        console.log('Nota emitida automaticamente com sucesso!');
-      } catch (error) {
-        console.error('Erro ao emitir nota automaticamente:', error);
-        // Se falhar emissão automática, envia email para admin processar manualmente
-        this.notifyAdmin(user, company, data);
-      }
-    } else {
-      // Fluxo normal ou dados insuficientes: notificar admin
-      this.notifyAdmin(user, company, data);
-    }
-
-    return request;
-  }
-
-  private async notifyAdmin(user: any, company: any, data: CreateRequestDTO) {
     try {
-      await this.emailService.send({
-        to: 'iaappcontabil@gmail.com',
-        subject: `🔔 Nova Solicitação de Nota Fiscal - ${company.nome}`,
-        html: novaSolicitacaoAdminEmailTemplate(
-          user.name,
-          user.email,
-          company.nome,
-          company.cnpj,
-          data.valor,
-          data.dataEmissao instanceof Date ? data.dataEmissao.toISOString() : data.dataEmissao,
-          data.observacoes || ''
-        ),
+      const invoice = await this.nfeioService.emitServiceInvoice({
+        companyId: company.nfeioCompanyId,
+        cityServiceCode: company.cityServiceCode,
+        cnaeCode: data.cnaeCode,
+        issRate: data.issRate,
+        description: data.observacoes || 'Serviços prestados',
+        servicesAmount: data.valor,
+        borrower,
       });
-    } catch (error) {
-      console.error('Erro ao enviar email para admin:', error);
+
+      const nfeioId = (invoice as any).id || (invoice as any).companies?.id;
+      let fileUrl = resolveInvoiceFileUrl(invoice);
+
+      if (!fileUrl && nfeioId) {
+        try {
+          const fullInvoice = await this.nfeioService.getServiceInvoice(company.nfeioCompanyId, nfeioId);
+          fileUrl = resolveInvoiceFileUrl(fullInvoice);
+        } catch (error: any) {
+          console.error('Falha ao buscar PDF da nota na NFE.io:', error.message);
+        }
+      }
+
+      const updatedRequest = await this.requestRepository.updateStatus(request.id, {
+        status: 'PROCESSADA',
+        arquivoUrl: fileUrl,
+        processadoEm: new Date(),
+        nfeioInvoiceId: nfeioId,
+      });
+
+      let attachments: Array<{ filename: string; content: Buffer }> | undefined;
+      if (fileUrl?.startsWith('http')) {
+        try {
+          const pdfResponse = await axios.get(fileUrl, {
+            responseType: 'arraybuffer',
+            timeout: 30000,
+            maxContentLength: 10 * 1024 * 1024,
+          });
+          attachments = [
+            {
+              filename: `NF-${request.id.substring(0, 8).toUpperCase()}.pdf`,
+              content: Buffer.from(pdfResponse.data),
+            },
+          ];
+        } catch (error: any) {
+          console.error('Falha ao baixar PDF para anexo no email:', error.message);
+        }
+      }
+
+      await this.emailService.send({
+        to: user.email,
+        subject: `✅ Nota Fiscal Emitida - ${company.nome}`,
+        html: notaProcessadaEmailTemplate(
+          user.name,
+          company.nome,
+          data.valor,
+          (invoice as any).number || 'Em processamento',
+          fileUrl
+        ),
+        attachments,
+      });
+
+      return updatedRequest;
+    } catch (error: any) {
+      await this.requestRepository.updateStatus(request.id, {
+        status: 'FALHA',
+        errorMessage: error.message,
+      });
+      throw new Error(`Falha ao emitir nota fiscal: ${error.message}`);
     }
   }
 }

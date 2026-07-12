@@ -143,6 +143,7 @@ model Request {
   valor              Float         @map("services_amount")
   dataEmissao        DateTime      @map("issue_date")
   observacoes        String?       @map("service_description")
+  issRate            Float?        @map("iss_rate")
   status             RequestStatus @default(PENDENTE)
   arquivoUrl         String?       @map("pdf_url")
   xmlUrl             String?       @map("xml_url")

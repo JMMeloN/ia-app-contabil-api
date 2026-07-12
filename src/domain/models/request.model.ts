@@ -6,6 +6,7 @@ export interface RequestModel {
   dataEmissao: Date;
   observacoes?: string | null;
   cnaeCode?: string | null;
+  issRate?: number | null;
   status: RequestStatus;
   arquivoUrl?: string | null;
   xmlUrl?: string | null;
@@ -28,7 +29,6 @@ export interface RequestModel {
   nfeioInvoiceId?: string | null;
   processadoEm?: Date | null;
   canceladoEm?: Date | null;
-  emissaoAutomatica: boolean;
   createdAt: Date;
   updatedAt: Date;
 }
