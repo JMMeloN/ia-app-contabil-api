@@ -16,6 +16,9 @@ export const env = {
   nfeioApiKey: process.env.NFEIO_API_KEY || '',
   nfeioCompanyId: process.env.NFEIO_COMPANY_ID || '',
   nfeioBaseUrl: process.env.NFEIO_BASE_URL || 'https://api.nfe.io/v1',
+  nfeioEnvironment:
+    process.env.NFEIO_ENVIRONMENT ||
+    (process.env.NODE_ENV === 'production' ? 'Production' : 'Development'),
   listaCnaeUrl:
     process.env.LISTACNAE_URL ||
     process.env.LISTA_CNAE_URL ||

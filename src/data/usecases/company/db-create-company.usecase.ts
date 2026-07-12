@@ -3,6 +3,7 @@ import { CompanyModel } from '@/domain/models/company.model';
 import { CompanyRepository } from '@/data/protocols/company.repository';
 import { NFEIOServiceProtocol } from '@/data/protocols/nfeio.service';
 import { CepServiceProtocol } from '@/data/protocols/cep.service';
+import { env } from '@/main/config/env';
 
 export class DbCreateCompany implements CreateCompanyUseCase {
   constructor(
@@ -75,7 +76,7 @@ export class DbCreateCompany implements CreateCompanyUseCase {
         rpsSerialNumber: data.rpsSerie,
         rpsNumber: data.rpsNumero,
         issRate: data.aliquotaIss,
-        environment: 'Development',
+        environment: env.nfeioEnvironment as 'Development' | 'Production' | 'Staging',
         fiscalStatus: 'Active',
         federalTaxDetermination: data.determinacaoImpostoFederal || 'NotInformed',
         municipalTaxDetermination: data.determinacaoImpostoMunicipal || 'NotInformed',

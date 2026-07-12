@@ -2,6 +2,7 @@ import { UpdateCompanyUseCase, UpdateCompanyDTO } from '@/domain/usecases/compan
 import { CompanyModel } from '@/domain/models/company.model';
 import { CompanyRepository, UpdateCompanyData } from '@/data/protocols/company.repository';
 import { NFEIOServiceProtocol } from '@/data/protocols/nfeio.service';
+import { env } from '@/main/config/env';
 
 export class DbUpdateCompany implements UpdateCompanyUseCase {
   constructor(
@@ -52,7 +53,7 @@ export class DbUpdateCompany implements UpdateCompanyUseCase {
           municipalTaxNumber: '',
           taxRegime: 'Isento',
           legalNature: 'EmpresaIndividualImobiliaria',
-          environment: 'Development'
+          environment: env.nfeioEnvironment as 'Development' | 'Production' | 'Staging'
         });
       } catch (error: any) {
         console.error('Falha ao atualizar empresa no NFe.io:', error.message);
