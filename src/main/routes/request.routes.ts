@@ -16,6 +16,10 @@ import { env } from '@/main/config/env';
 
 const router = Router();
 
+function getSingleParam(value: string | string[] | undefined): string {
+  return Array.isArray(value) ? value[0] || '' : value || '';
+}
+
 // Todas as rotas de solicitação precisam de autenticação
 router.use(authMiddleware);
 
@@ -69,7 +73,7 @@ router.get('/', async (req: AuthRequest, res: Response) => {
 // GET /requests/:id - Buscar solicitação por ID
 router.get('/:id', async (req: AuthRequest, res: Response) => {
   try {
-    const { id } = req.params;
+    const id = getSingleParam(req.params.id);
     const getRequestByIdUseCase = makeGetRequestByIdUseCase();
 
     // Se for cliente, só pode ver suas próprias solicitações
@@ -86,7 +90,7 @@ router.get('/:id', async (req: AuthRequest, res: Response) => {
 // GET /requests/:id/invoice-pdf - Resolve URL atual da nota e redireciona para o PDF
 router.get('/:id/invoice-pdf', async (req: AuthRequest, res: Response) => {
   try {
-    const { id } = req.params;
+    const id = getSingleParam(req.params.id);
     const getInvoicePdfUrlUseCase = makeGetInvoicePdfUrlUseCase();
     const result = await getInvoicePdfUrlUseCase.execute({
       requestId: id,
@@ -145,7 +149,7 @@ router.patch(
   roleMiddleware(['OPERACIONAL', 'ADMIN']),
   async (req: AuthRequest, res: Response) => {
     try {
-      const { id } = req.params;
+      const id = getSingleParam(req.params.id);
       const data = updateStatusSchema.parse(req.body);
       const updateStatusUseCase = makeUpdateRequestStatusUseCase();
       const request = await updateStatusUseCase.execute({
@@ -166,7 +170,7 @@ router.patch(
 // DELETE /requests/:id/cancel - Cancelar solicitação (apenas o próprio cliente)
 router.delete('/:id/cancel', roleMiddleware(['CLIENTE']), async (req: AuthRequest, res: Response) => {
   try {
-    const { id } = req.params;
+    const id = getSingleParam(req.params.id);
     const cancelRequestUseCase = makeCancelRequestUseCase();
     const request = await cancelRequestUseCase.execute({
       requestId: id,
@@ -185,7 +189,7 @@ router.post(
   roleMiddleware(['OPERACIONAL', 'ADMIN']),
   async (req: AuthRequest, res: Response) => {
     try {
-      const { id } = req.params;
+      const id = getSingleParam(req.params.id);
       const data = emitInvoiceSchema.parse(req.body);
       const emitInvoiceUseCase = makeEmitInvoiceUseCase();
 
@@ -215,7 +219,7 @@ router.post(
   roleMiddleware(['OPERACIONAL', 'ADMIN']),
   async (req: AuthRequest, res: Response) => {
     try {
-      const { id } = req.params;
+      const id = getSingleParam(req.params.id);
       const cancelNfeioInvoiceUseCase = makeCancelNfeioInvoiceUseCase();
 
       const request = await cancelNfeioInvoiceUseCase.execute({

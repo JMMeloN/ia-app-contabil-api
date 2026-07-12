@@ -4,6 +4,10 @@ import cnaes from '@/data/reference/cnaes.json';
 
 const router = Router();
 
+function getSingleValue(value: string | string[] | undefined): string {
+  return Array.isArray(value) ? value[0] || '' : value || '';
+}
+
 const listQuerySchema = z.object({
   query: z.string().trim().optional(),
   level: z.enum(['section', 'division', 'group', 'class', 'subclass']).optional(),
@@ -55,7 +59,7 @@ router.get('/', (req: Request, res: Response) => {
 });
 
 router.get('/:code', (req: Request, res: Response) => {
-  const code = req.params.code.trim();
+  const code = getSingleValue(req.params.code).trim();
   const item = cnaes.find((entry) => entry.code === code);
 
   if (!item) {

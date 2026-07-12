@@ -9,6 +9,10 @@ import { makeUpdateRequestStatusUseCase } from '@/main/factories/request.factory
 
 const router = Router();
 
+function getSingleParam(value: string | string[] | undefined): string {
+  return Array.isArray(value) ? value[0] || '' : value || '';
+}
+
 // Todas as rotas precisam de autenticação
 router.use(authMiddleware);
 
@@ -45,7 +49,7 @@ router.post(
         JSON.stringify(req.file, null, 2),
       );
 
-      const { requestId } = req.params;
+      const requestId = getSingleParam(req.params.requestId);
       const updateStatusUseCase = makeUpdateRequestStatusUseCase();
 
       // Tentar obter a URL retornada pelo Cloudinary em diferentes propriedades

@@ -10,6 +10,10 @@ const payerRepository = new PrismaPayerRepository();
 const companyRepository = new PrismaCompanyRepository();
 const nfeioService = new NFEIOService();
 
+function getSingleParam(value: string | string[] | undefined): string {
+  return Array.isArray(value) ? value[0] || '' : value || '';
+}
+
 router.use(authMiddleware);
 
 const createPayerSchema = z.object({
@@ -233,7 +237,7 @@ router.post('/', async (req: AuthRequest, res: Response) => {
 
 router.put('/:id', async (req: AuthRequest, res: Response) => {
   try {
-    const { id } = req.params;
+    const id = getSingleParam(req.params.id);
     const data = updatePayerSchema.parse(req.body);
 
     const payer = await payerRepository.findById(id);
@@ -317,7 +321,7 @@ router.put('/:id', async (req: AuthRequest, res: Response) => {
 
 router.delete('/:id', async (req: AuthRequest, res: Response) => {
   try {
-    const { id } = req.params;
+    const id = getSingleParam(req.params.id);
     const payer = await payerRepository.findById(id);
     if (!payer || payer.userId !== req.user!.userId) {
       return res.status(404).json({ error: 'Tomador não encontrado' });

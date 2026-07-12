@@ -12,6 +12,10 @@ import {
 
 const router = Router();
 
+function getSingleParam(value: string | string[] | undefined): string {
+  return Array.isArray(value) ? value[0] || '' : value || '';
+}
+
 // Configuração do multer para memória (para o certificado digital)
 const uploadMemory = multer({
   storage: multer.memoryStorage(),
@@ -100,7 +104,7 @@ router.post('/', async (req: AuthRequest, res: Response) => {
 // PUT /companies/:id - Atualizar empresa
 router.put('/:id', async (req: AuthRequest, res: Response) => {
   try {
-    const { id } = req.params;
+    const id = getSingleParam(req.params.id);
     const data = updateCompanySchema.parse(req.body);
     const updateCompanyUseCase = makeUpdateCompanyUseCase();
     const company = await updateCompanyUseCase.execute({
@@ -121,7 +125,7 @@ router.put('/:id', async (req: AuthRequest, res: Response) => {
 // DELETE /companies/:id - Deletar empresa
 router.delete('/:id', async (req: AuthRequest, res: Response) => {
   try {
-    const { id } = req.params;
+    const id = getSingleParam(req.params.id);
     const deleteCompanyUseCase = makeDeleteCompanyUseCase();
     await deleteCompanyUseCase.execute({
       id,
@@ -141,7 +145,7 @@ router.post('/:id/certificate', uploadMemory.single('file'), async (req: AuthReq
       return res.status(400).json({ error: 'Arquivo do certificado não enviado' });
     }
 
-    const { id } = req.params;
+    const id = getSingleParam(req.params.id);
     const { password } = req.body;
     
     const uploadCertificateUseCase = makeUploadCertificateUseCase();
