@@ -68,6 +68,23 @@ const updateCompanySchema = z.object({
   cidade: z.string().min(2, 'Cidade inválida').optional(),
   estado: z.string().length(2, 'UF deve ter 2 caracteres').optional(),
   cep: z.string().regex(/^\d{5}-\d{3}$/, 'CEP inválido').optional(),
+  cityServiceCode: z.string().optional(),
+  nomeFantasia: z.string().optional(),
+  dataAbertura: z.string().datetime({ message: 'Data de abertura inválida' }).optional(),
+  regimeTributario: z.enum(['Isento', 'MicroempreendedorIndividual', 'SimplesNacional', 'LucroPresumido', 'LucroReal']).optional(),
+  naturezaJuridica: z.string().optional(),
+  inscricaoMunicipal: z.string().optional(),
+  inscricaoEstadual: z.string().optional(),
+  regimeEspecialTributacao: z.string().optional(),
+  numeroJuntaComercial: z.number().optional(),
+  rpsSerie: z.string().optional(),
+  rpsNumero: z.number().optional(),
+  aliquotaIss: z.number().optional(),
+  determinacaoImpostoFederal: z.string().optional(),
+  determinacaoImpostoMunicipal: z.string().optional(),
+  prefeituraLogin: z.string().optional(),
+  prefeituraSenha: z.string().optional(),
+  valorAutorizacao: z.string().optional(),
 });
 
 // GET /companies - Listar empresas do usuário
