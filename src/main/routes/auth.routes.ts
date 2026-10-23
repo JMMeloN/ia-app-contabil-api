@@ -8,6 +8,7 @@ import {
   makeLogoutUseCase,
 } from '@/main/factories/auth.factory';
 import { authMiddleware, AuthRequest } from '@/main/middlewares/auth.middleware';
+import { authRateLimiter, tokenRateLimiter } from '@/main/middlewares/rate-limit.middleware';
 
 const router = Router();
 
@@ -28,7 +29,7 @@ const refreshTokenSchema = z.object({
 });
 
 // POST /auth/register
-router.post('/register', async (req: Request, res: Response) => {
+router.post('/register', authRateLimiter, async (req: Request, res: Response) => {
   try {
     const data = registerSchema.parse(req.body);
     const registerUseCase = makeRegisterUseCase();
@@ -44,7 +45,7 @@ router.post('/register', async (req: Request, res: Response) => {
 });
 
 // POST /auth/login
-router.post('/login', async (req: Request, res: Response) => {
+router.post('/login', authRateLimiter, async (req: Request, res: Response) => {
   try {
     const data = loginSchema.parse(req.body);
     const loginUseCase = makeLoginUseCase();
@@ -60,7 +61,7 @@ router.post('/login', async (req: Request, res: Response) => {
 });
 
 // POST /auth/refresh
-router.post('/refresh', async (req: Request, res: Response) => {
+router.post('/refresh', tokenRateLimiter, async (req: Request, res: Response) => {
   try {
     const data = refreshTokenSchema.parse(req.body);
     const refreshTokenUseCase = makeRefreshTokenUseCase();
@@ -76,7 +77,7 @@ router.post('/refresh', async (req: Request, res: Response) => {
 });
 
 // POST /auth/logout
-router.post('/logout', async (req: Request, res: Response) => {
+router.post('/logout', tokenRateLimiter, async (req: Request, res: Response) => {
   try {
     const data = refreshTokenSchema.parse(req.body);
     const logoutUseCase = makeLogoutUseCase();

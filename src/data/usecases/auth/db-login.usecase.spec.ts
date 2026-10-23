@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { DbLogin } from './db-login.usecase';
 import { UserRepository } from '@/data/protocols/user.repository';
+import { AuthSessionRepository } from '@/data/protocols/auth-session.repository';
 import { UserWithPassword } from '@/domain/models/user.model';
 import bcrypt from 'bcryptjs';
 
@@ -11,6 +12,13 @@ const makeUserRepository = (): UserRepository => ({
   findByIdWithPassword: vi.fn(),
   update: vi.fn(),
   updatePassword: vi.fn(),
+});
+
+const makeAuthSessionRepository = (): AuthSessionRepository => ({
+  create: vi.fn().mockResolvedValue({}),
+  findByRefreshTokenHash: vi.fn(),
+  revokeById: vi.fn(),
+  revokeByUserId: vi.fn(),
 });
 
 const makeFakeUser = (): UserWithPassword => ({
@@ -25,11 +33,20 @@ const makeFakeUser = (): UserWithPassword => ({
 
 describe('DbLogin', () => {
   let userRepository: UserRepository;
+  let authSessionRepository: AuthSessionRepository;
   let sut: DbLogin;
 
   beforeEach(() => {
     userRepository = makeUserRepository();
-    sut = new DbLogin(userRepository, 'jwt-secret', '7d');
+    authSessionRepository = makeAuthSessionRepository();
+    sut = new DbLogin(
+      userRepository,
+      'jwt-secret',
+      '1h',
+      'refresh-secret',
+      '30d',
+      authSessionRepository
+    );
   });
 
   it('deve lançar erro quando email não for encontrado', async () => {

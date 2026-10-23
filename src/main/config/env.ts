@@ -2,13 +2,56 @@ import dotenv from 'dotenv';
 
 dotenv.config();
 
+const nodeEnv = process.env.NODE_ENV || 'development';
+const isProduction = nodeEnv === 'production';
+
+const MIN_SECRET_LENGTH = 32;
+
+/**
+ * Resolves a signing secret. In production the variable is mandatory and must be
+ * long enough; in development we fall back to a dev-only value and warn loudly.
+ */
+function resolveSecret(name: string, devFallback: string): string {
+  const value = process.env[name];
+
+  if (value && value.length >= MIN_SECRET_LENGTH) {
+    return value;
+  }
+
+  if (isProduction) {
+    throw new Error(
+      `${name} must be set and have at least ${MIN_SECRET_LENGTH} characters in production`
+    );
+  }
+
+  if (value) {
+    console.warn(`⚠️  ${name} is shorter than ${MIN_SECRET_LENGTH} characters; fine for dev only`);
+    return value;
+  }
+
+  console.warn(`⚠️  ${name} is not set; using an insecure development fallback`);
+  return devFallback;
+}
+
+const jwtSecret = resolveSecret('JWT_SECRET', 'dev-secret-do-not-use-in-production-0000');
+const refreshTokenSecret = resolveSecret(
+  'REFRESH_TOKEN_SECRET',
+  'dev-refresh-secret-do-not-use-in-production'
+);
+
+if (isProduction && jwtSecret === refreshTokenSecret) {
+  throw new Error('REFRESH_TOKEN_SECRET must be different from JWT_SECRET in production');
+}
+
 export const env = {
   port: process.env.PORT || 3333,
-  nodeEnv: process.env.NODE_ENV || 'development',
+  nodeEnv,
+  isProduction,
   databaseUrl: process.env.DATABASE_URL || '',
-  jwtSecret: process.env.JWT_SECRET || 'dev-secret',
-  jwtExpiresIn: process.env.JWT_EXPIRES_IN || '7d',
-  refreshTokenSecret: process.env.REFRESH_TOKEN_SECRET || process.env.JWT_SECRET || 'dev-refresh-secret',
+  jwtSecret,
+  // Short-lived access token; clients renew it through POST /auth/refresh.
+  jwtExpiresIn: process.env.JWT_EXPIRES_IN || '1h',
+  refreshTokenSecret,
   refreshTokenExpiresIn: process.env.REFRESH_TOKEN_EXPIRES_IN || '30d',
   corsOrigin: process.env.CORS_ORIGIN || 'http://localhost:3000',
   resendApiKey: process.env.RESEND_API_KEY || '',
@@ -18,7 +61,7 @@ export const env = {
   nfeioBaseUrl: process.env.NFEIO_BASE_URL || 'https://api.nfe.io/v1',
   nfeioEnvironment:
     process.env.NFEIO_ENVIRONMENT ||
-    (process.env.NODE_ENV === 'production' ? 'Production' : 'Development'),
+    (isProduction ? 'Production' : 'Development'),
   listaCnaeUrl:
     process.env.LISTACNAE_URL ||
     process.env.LISTA_CNAE_URL ||

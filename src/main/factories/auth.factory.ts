@@ -38,7 +38,8 @@ export function makeRefreshTokenUseCase() {
     authSessionRepository,
     env.jwtSecret,
     env.jwtExpiresIn,
-    env.refreshTokenSecret
+    env.refreshTokenSecret,
+    env.refreshTokenExpiresIn
   );
 }
 
@@ -54,5 +55,6 @@ export function makeUpdateProfileUseCase() {
 
 export function makeChangePasswordUseCase() {
   const userRepository = new PrismaUserRepository();
-  return new DbChangePassword(userRepository);
+  const authSessionRepository = new PrismaAuthSessionRepository();
+  return new DbChangePassword(userRepository, authSessionRepository);
 }

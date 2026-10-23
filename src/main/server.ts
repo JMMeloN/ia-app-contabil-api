@@ -1,5 +1,6 @@
 import express from 'express';
 import cors from 'cors';
+import helmet from 'helmet';
 import type { CorsOptions } from 'cors';
 import { env } from './config/env';
 
@@ -8,12 +9,18 @@ import companyRoutes from './routes/company.routes';
 import requestRoutes from './routes/request.routes';
 import userRoutes from './routes/user.routes';
 import uploadRoutes from './routes/upload.routes';
-import seedRoutes from './routes/seed.routes';
 import payerRoutes from './routes/payer.routes';
 import cnaeRoutes from './routes/cnae.routes';
 import nbsRoutes from './routes/nbs.routes';
+import { generalRateLimiter } from './middlewares/rate-limit.middleware';
 
 const app = express();
+
+// Render terminates TLS in front of the app; trust the first proxy hop so
+// req.ip (used by the rate limiter) reflects the real client address.
+if (env.isProduction) {
+  app.set('trust proxy', 1);
+}
 
 function normalizeAllowedOrigins(raw: string): string[] {
   return raw
@@ -57,8 +64,10 @@ const corsOptions: CorsOptions = {
   credentials: true,
 };
 
+app.use(helmet());
 app.use(cors(corsOptions));
-app.use(express.json());
+app.use(express.json({ limit: '1mb' }));
+app.use(generalRateLimiter);
 app.use('/files', express.static('uploads'));
 
 app.use('/auth', authRoutes);
@@ -66,7 +75,6 @@ app.use('/companies', companyRoutes);
 app.use('/requests', requestRoutes);
 app.use('/users', userRoutes);
 app.use('/upload', uploadRoutes);
-app.use('/seed', seedRoutes);
 app.use('/payers', payerRoutes);
 app.use('/cnaes', cnaeRoutes);
 app.use('/nbs', nbsRoutes);

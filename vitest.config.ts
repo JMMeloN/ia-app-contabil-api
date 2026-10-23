@@ -6,6 +6,9 @@ export default defineConfig({
   test: {
     environment: 'node',
     globals: true,
+    // Only run the TypeScript specs; dist/ holds stale compiled copies
+    include: ['src/**/*.spec.ts'],
+    exclude: ['node_modules/**', 'dist/**'],
     coverage: {
       provider: 'v8',
       reporter: ['text', 'lcov'],

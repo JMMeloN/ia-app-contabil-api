@@ -7,6 +7,8 @@ export interface RefreshTokenDTO {
 export interface RefreshTokenResponse {
   user: UserModel;
   accessToken: string;
+  /** Rotated refresh token; the one sent in the request is revoked. */
+  refreshToken: string;
   accessTokenExpiresAt?: string;
 }
 
