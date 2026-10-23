@@ -13,7 +13,11 @@ services:
       - key: JWT_SECRET
         generateValue: true
       - key: JWT_EXPIRES_IN
-        value: 7d
+        value: 1h
+      - key: REFRESH_TOKEN_SECRET
+        generateValue: true
+      - key: REFRESH_TOKEN_EXPIRES_IN
+        value: 30d
       - key: CORS_ORIGIN
         sync: false
       - key: PORT
