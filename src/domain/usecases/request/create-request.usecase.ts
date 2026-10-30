@@ -1,4 +1,4 @@
-import { RequestModel } from '@/domain/models/request.model';
+import { RequestModel, TaxationType } from '@/domain/models/request.model';
 
 export interface CreateRequestDTO {
   valor: number;
@@ -6,6 +6,17 @@ export interface CreateRequestDTO {
   observacoes?: string;
   cnaeCode?: string;
   issRate?: number;
+  federalServiceCode?: string;
+  taxationType?: TaxationType;
+  issWithheld?: boolean;
+  deductionsAmount?: number;
+  unconditionedDiscountAmount?: number;
+  conditionedDiscountAmount?: number;
+  irAmountWithheld?: number;
+  pisAmountWithheld?: number;
+  cofinsAmountWithheld?: number;
+  csllAmountWithheld?: number;
+  inssAmountWithheld?: number;
   userId: string;
   companyId: string;
   payerId: string;

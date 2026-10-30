@@ -4,11 +4,21 @@ import { authMiddleware, AuthRequest } from '@/main/middlewares/auth.middleware'
 import { PrismaPayerRepository } from '@/infra/db/prisma/payer.repository';
 import { PrismaCompanyRepository } from '@/infra/db/prisma/company.repository';
 import { NFEIOService } from '@/infra/nfeio/nfeio.service';
+import { NFEIOPersonInput } from '@/data/protocols/nfeio.service';
+import { makeNfeioCompanySync } from '@/main/factories/company.factory';
 
 const router = Router();
 const payerRepository = new PrismaPayerRepository();
 const companyRepository = new PrismaCompanyRepository();
 const nfeioService = new NFEIOService();
+const companySync = makeNfeioCompanySync();
+
+const taxNumberSchema = z
+  .string()
+  .max(20, 'Inscrição inválida')
+  .optional()
+  .or(z.literal(''))
+  .transform((value) => (value ? value.replace(/[^\dA-Za-z]/g, '') : undefined));
 
 function getSingleParam(value: string | string[] | undefined): string {
   return Array.isArray(value) ? value[0] || '' : value || '';
@@ -23,6 +33,8 @@ const createPayerSchema = z.object({
   type: z.enum(['LEGAL_ENTITY', 'NATURAL_PERSON']).optional(),
   email: z.string().email('Email inválido').optional().or(z.literal('')),
   phone: z.string().optional(),
+  municipalTaxNumber: taxNumberSchema,
+  stateTaxNumber: taxNumberSchema,
   endereco: z.string().optional(),
   rua: z.string().optional(),
   numero: z.string().optional(),
@@ -40,6 +52,8 @@ const updatePayerSchema = z.object({
   type: z.enum(['LEGAL_ENTITY', 'NATURAL_PERSON']).optional(),
   email: z.string().email('Email inválido').optional().or(z.literal('')),
   phone: z.string().optional(),
+  municipalTaxNumber: taxNumberSchema,
+  stateTaxNumber: taxNumberSchema,
   endereco: z.string().optional(),
   rua: z.string().optional(),
   numero: z.string().optional(),
@@ -102,6 +116,8 @@ async function syncPayerWithNfeio(
     type: 'LEGAL_ENTITY' | 'NATURAL_PERSON';
     email?: string;
     phone?: string;
+    municipalTaxNumber?: string;
+    stateTaxNumber?: string;
     endereco?: string;
     rua?: string;
     numero?: string;
@@ -114,40 +130,47 @@ async function syncPayerWithNfeio(
     nfeioPayerId?: string | null;
   }
 ) {
-  if (!company.nfeioCompanyId) {
-    throw new Error('Empresa ainda não sincronizada com a NFE.io');
-  }
+  // Link the company to NFe.io on demand instead of failing when the
+  // background creation has not finished (or failed) yet.
+  const linkedCompany = await companySync.ensureLinked(company);
+  const nfeioCompanyId = linkedCompany.nfeioCompanyId!;
 
-  const data = {
+  const data: NFEIOPersonInput = {
     federalTaxNumber: payload.document,
     name: payload.name,
     email: payload.email || company.email,
+    phoneNumber: payload.phone || undefined,
     address: buildAddress(payload, company),
   };
 
   if (payload.type === 'LEGAL_ENTITY') {
+    // Inscrição Municipal / Estadual only exist for legal entities on NFe.io.
+    data.municipalTaxNumber = payload.municipalTaxNumber || undefined;
+    const stateDigits = (payload.stateTaxNumber || '').replace(/\D/g, '');
+    data.regionalTaxNumber = stateDigits ? Number(stateDigits) : undefined;
+
     const existing =
       payload.nfeioPayerId
         ? { id: payload.nfeioPayerId }
-        : await nfeioService.findLegalPersonByTaxNumber(company.nfeioCompanyId, payload.document);
+        : await nfeioService.findLegalPersonByTaxNumber(nfeioCompanyId, payload.document);
 
     if (existing?.id) {
-      return nfeioService.updateLegalPerson(company.nfeioCompanyId, existing.id, data);
+      return nfeioService.updateLegalPerson(nfeioCompanyId, existing.id, data);
     }
 
-    return nfeioService.createLegalPerson(company.nfeioCompanyId, data);
+    return nfeioService.createLegalPerson(nfeioCompanyId, data);
   }
 
   const existing =
     payload.nfeioPayerId
       ? { id: payload.nfeioPayerId }
-      : await nfeioService.findNaturalPersonByTaxNumber(company.nfeioCompanyId, payload.document);
+      : await nfeioService.findNaturalPersonByTaxNumber(nfeioCompanyId, payload.document);
 
   if (existing?.id) {
-    return nfeioService.updateNaturalPerson(company.nfeioCompanyId, existing.id, data);
+    return nfeioService.updateNaturalPerson(nfeioCompanyId, existing.id, data);
   }
 
-  return nfeioService.createNaturalPerson(company.nfeioCompanyId, data);
+  return nfeioService.createNaturalPerson(nfeioCompanyId, data);
 }
 
 router.get('/', async (req: AuthRequest, res: Response) => {
@@ -190,6 +213,8 @@ router.post('/', async (req: AuthRequest, res: Response) => {
       type: data.type,
       email: data.email || undefined,
       phone: data.phone,
+      municipalTaxNumber: data.type === 'NATURAL_PERSON' ? undefined : data.municipalTaxNumber,
+      stateTaxNumber: data.type === 'NATURAL_PERSON' ? undefined : data.stateTaxNumber,
       endereco: data.endereco,
       rua: data.rua,
       numero: data.numero,
@@ -259,6 +284,8 @@ router.put('/:id', async (req: AuthRequest, res: Response) => {
       type: data.type,
       email: data.email,
       phone: data.phone,
+      municipalTaxNumber: data.municipalTaxNumber,
+      stateTaxNumber: data.stateTaxNumber,
       endereco: data.endereco,
       rua: data.rua,
       numero: data.numero,
@@ -283,6 +310,8 @@ router.put('/:id', async (req: AuthRequest, res: Response) => {
         type: updated.type,
         email: updated.email || undefined,
         phone: updated.phone || undefined,
+        municipalTaxNumber: updated.municipalTaxNumber || undefined,
+        stateTaxNumber: updated.stateTaxNumber || undefined,
         endereco: updated.endereco || undefined,
         rua: updated.rua || undefined,
         numero: updated.numero || undefined,

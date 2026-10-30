@@ -1,6 +1,37 @@
-import { CompanyModel } from '@/domain/models/company.model';
+import { CompanyModel, CompanySyncStatus } from '@/domain/models/company.model';
 
-export interface CreateCompanyData {
+/** Fiscal and NFe.io related fields shared by create and update. */
+export interface CompanyFiscalData {
+  nomeFantasia?: string;
+  rua?: string;
+  numero?: string;
+  bairro?: string;
+  complemento?: string;
+  codigoCidade?: string;
+  dataAbertura?: Date;
+  regimeTributario?: string;
+  naturezaJuridica?: string;
+  inscricaoMunicipal?: string;
+  inscricaoEstadual?: string;
+  regimeEspecialTributacao?: string;
+  numeroJuntaComercial?: number;
+  rpsSerie?: string;
+  rpsNumero?: number;
+  aliquotaIss?: number;
+  determinacaoImpostoFederal?: string;
+  determinacaoImpostoMunicipal?: string;
+  prefeituraLogin?: string;
+  prefeituraSenha?: string;
+  valorAutorizacao?: string;
+  cityServiceCode?: string;
+  certificateThumbprint?: string;
+  certificateExpiresAt?: Date;
+  certificateStatus?: string;
+  nfeioCompanyId?: string;
+  syncStatus?: CompanySyncStatus;
+}
+
+export interface CreateCompanyData extends CompanyFiscalData {
   nome: string;
   cnpj: string;
   email: string;
@@ -10,11 +41,9 @@ export interface CreateCompanyData {
   estado: string;
   cep: string;
   userId: string;
-  nfeioCompanyId?: string;
-  cityServiceCode?: string;
 }
 
-export interface UpdateCompanyData {
+export interface UpdateCompanyData extends CompanyFiscalData {
   nome?: string;
   cnpj?: string;
   email?: string;
@@ -23,8 +52,6 @@ export interface UpdateCompanyData {
   cidade?: string;
   estado?: string;
   cep?: string;
-  nfeioCompanyId?: string;
-  cityServiceCode?: string;
 }
 
 export interface CompanyRepository {

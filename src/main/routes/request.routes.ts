@@ -30,6 +30,34 @@ const createRequestSchema = z.object({
   observacoes: z.string().optional(),
   cnaeCode: z.string().optional(),
   issRate: z.number().positive('Alíquota ISS deve ser positiva'),
+  federalServiceCode: z.string().max(20).optional(),
+  taxationType: z
+    .enum([
+      'None',
+      'WithinCity',
+      'OutsideCity',
+      'Export',
+      'Free',
+      'Immune',
+      'SuspendedCourtDecision',
+      'SuspendedAdministrativeProcedure',
+    ])
+    .optional(),
+  issWithheld: z.boolean().optional(),
+  deductionsAmount: z.number().nonnegative('Deduções não podem ser negativas').optional(),
+  unconditionedDiscountAmount: z
+    .number()
+    .nonnegative('Desconto incondicionado não pode ser negativo')
+    .optional(),
+  conditionedDiscountAmount: z
+    .number()
+    .nonnegative('Desconto condicionado não pode ser negativo')
+    .optional(),
+  irAmountWithheld: z.number().nonnegative().optional(),
+  pisAmountWithheld: z.number().nonnegative().optional(),
+  cofinsAmountWithheld: z.number().nonnegative().optional(),
+  csllAmountWithheld: z.number().nonnegative().optional(),
+  inssAmountWithheld: z.number().nonnegative().optional(),
   companyId: z.string().uuid('ID da empresa inválido'),
   payerId: z.string().uuid('ID do tomador inválido'),
   payerName: z.string().optional(),

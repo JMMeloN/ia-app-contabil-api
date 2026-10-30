@@ -1,37 +1,39 @@
 import { UploadCertificateUseCase, UploadCertificateDTO } from '@/domain/usecases/company/upload-certificate.usecase';
 import { CompanyRepository } from '@/data/protocols/company.repository';
 import { NFEIOServiceProtocol } from '@/data/protocols/nfeio.service';
+import { NfeioCompanySync } from './nfeio-company-sync';
 
 export class DbUploadCertificate implements UploadCertificateUseCase {
   constructor(
     private readonly companyRepository: CompanyRepository,
-    private readonly nfeioService: NFEIOServiceProtocol
+    private readonly nfeioService: NFEIOServiceProtocol,
+    private readonly nfeioSync: NfeioCompanySync,
   ) {}
 
   async execute(data: UploadCertificateDTO): Promise<any> {
-    // 1. Buscar a empresa localmente para verificar a propriedade
     const company = await this.companyRepository.findById(data.companyId);
-    
     if (!company) {
       throw new Error('Empresa não encontrada');
     }
 
-    // 2. Verificar se a empresa pertence ao usuário (a menos que seja admin/operacional, mas aqui focamos no dono)
-    // Se for um administrador, essa verificação pode ser pulada no middleware ou aqui
     if (company.userId !== data.userId) {
-      // Nota: Em um cenário real, poderíamos permitir que OPERACIONAL e ADMIN fizessem o upload
-      // Para simplificar, vamos assumir que o controller passa o userId correto ou validamos a role antes
+      throw new Error('Você não tem permissão para alterar esta empresa');
     }
 
-    if (!company.nfeioCompanyId) {
-      throw new Error('Empresa não está vinculada ao NFe.io. Realize o cadastro primeiro.');
-    }
+    // Links the company to NFe.io first, so uploading right after creation works.
+    const linked = await this.nfeioSync.ensureLinked(company);
 
-    // 3. Realizar o upload para o NFe.io
-    const result = await this.nfeioService.uploadCertificate(company.nfeioCompanyId, {
+    const result = await this.nfeioService.uploadCertificate(linked.nfeioCompanyId!, {
       file: data.file,
       fileName: data.fileName,
-      password: data.password
+      password: data.password,
+    });
+
+    const certificate = result?.certificate ?? result ?? {};
+    await this.companyRepository.update(company.id, {
+      certificateStatus: certificate.status || 'Uploaded',
+      certificateThumbprint: certificate.thumbprint || undefined,
+      certificateExpiresAt: certificate.expiresOn ? new Date(certificate.expiresOn) : undefined,
     });
 
     return result;

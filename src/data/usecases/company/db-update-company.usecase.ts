@@ -1,28 +1,24 @@
 import { UpdateCompanyUseCase, UpdateCompanyDTO } from '@/domain/usecases/company/update-company.usecase';
 import { CompanyModel } from '@/domain/models/company.model';
-import { CompanyRepository, UpdateCompanyData } from '@/data/protocols/company.repository';
-import { NFEIOServiceProtocol } from '@/data/protocols/nfeio.service';
-import { env } from '@/main/config/env';
+import { CompanyRepository } from '@/data/protocols/company.repository';
+import { NfeioCompanySync } from './nfeio-company-sync';
 
 export class DbUpdateCompany implements UpdateCompanyUseCase {
   constructor(
     private readonly companyRepository: CompanyRepository,
-    private readonly nfeioService: NFEIOServiceProtocol
+    private readonly nfeioSync: NfeioCompanySync,
   ) {}
 
   async execute(data: UpdateCompanyDTO): Promise<CompanyModel> {
-    // Verificar se a empresa existe
     const company = await this.companyRepository.findById(data.id);
     if (!company) {
       throw new Error('Empresa não encontrada');
     }
 
-    // Verificar se pertence ao usuário
     if (company.userId !== data.userId) {
       throw new Error('Você não tem permissão para editar esta empresa');
     }
 
-    // Se estiver alterando o CNPJ, verificar se o usuário já tem outra empresa com este CNPJ
     if (data.cnpj && data.cnpj !== company.cnpj) {
       const existingCompany = await this.companyRepository.findByUserIdAndCnpj(data.userId, data.cnpj);
       if (existingCompany) {
@@ -30,42 +26,18 @@ export class DbUpdateCompany implements UpdateCompanyUseCase {
       }
     }
 
-    // Tentar atualizar no NFe.io se tiver nfeioCompanyId
-    if (company.nfeioCompanyId) {
-      try {
-        const enderecoCompleto = data.endereco || company.endereco || '';
-        await this.nfeioService.updateCompany(company.nfeioCompanyId, {
-          name: data.nome || company.nome,
-          federalTaxNumber: Number((data.cnpj || company.cnpj).replace(/\D/g, '')),
-          email: data.email || company.email,
-          address: {
-            postalCode: (data.cep || company.cep).replace(/\D/g, ''),
-            street: enderecoCompleto.split(',')[0] || 'Não informado',
-            number: enderecoCompleto.split(',')[1]?.trim() || 'S/N',
-            district: 'Centro',
-            city: {
-              code: '3550308',
-              name: data.cidade || company.cidade
-            },
-            state: data.estado || company.estado
-          },
-          openningDate: new Date().toISOString(),
-          municipalTaxNumber: '',
-          taxRegime: 'Isento',
-          legalNature: 'EmpresaIndividualImobiliaria',
-          environment: env.nfeioEnvironment as 'Development' | 'Production' | 'Staging'
-        });
-      } catch (error: any) {
-        console.error('Falha ao atualizar empresa no NFe.io:', error.message);
-      }
+    const { userId, id, dataAbertura, ...fields } = data;
+    const updatedCompany = await this.companyRepository.update(id, {
+      ...fields,
+      dataAbertura: dataAbertura ? new Date(dataAbertura) : undefined,
+    });
+
+    // Mirror the stored data on NFe.io; a failure here must not block the local update.
+    try {
+      await this.nfeioSync.pushUpdate(updatedCompany);
+    } catch (error: any) {
+      console.error('[NFe.io] Falha ao atualizar empresa:', error.message);
     }
-
-    // Preparar dados para o repositório
-    const { userId, id, ...updateDTO } = data;
-    const updateData: UpdateCompanyData = { ...updateDTO };
-
-    // Atualizar empresa no banco local
-    const updatedCompany = await this.companyRepository.update(data.id, updateData);
 
     return updatedCompany;
   }

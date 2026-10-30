@@ -5,6 +5,8 @@ export interface PayerModel {
   type: 'LEGAL_ENTITY' | 'NATURAL_PERSON';
   email?: string | null;
   phone?: string | null;
+  municipalTaxNumber?: string | null;
+  stateTaxNumber?: string | null;
   endereco?: string | null;
   rua?: string | null;
   numero?: string | null;
@@ -28,6 +30,8 @@ export interface CreatePayerData {
   type?: 'LEGAL_ENTITY' | 'NATURAL_PERSON';
   email?: string;
   phone?: string;
+  municipalTaxNumber?: string;
+  stateTaxNumber?: string;
   endereco?: string;
   rua?: string;
   numero?: string;
@@ -47,6 +51,8 @@ export interface UpdatePayerData {
   type?: 'LEGAL_ENTITY' | 'NATURAL_PERSON';
   email?: string;
   phone?: string;
+  municipalTaxNumber?: string;
+  stateTaxNumber?: string;
   endereco?: string;
   rua?: string;
   numero?: string;

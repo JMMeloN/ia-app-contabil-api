@@ -3,37 +3,36 @@ import { DbListCompanies } from '@/data/usecases/company/db-list-companies.useca
 import { DbUpdateCompany } from '@/data/usecases/company/db-update-company.usecase';
 import { DbDeleteCompany } from '@/data/usecases/company/db-delete-company.usecase';
 import { DbUploadCertificate } from '@/data/usecases/company/db-upload-certificate.usecase';
+import { DbSyncCompany } from '@/data/usecases/company/db-sync-company.usecase';
+import { NfeioCompanySync } from '@/data/usecases/company/nfeio-company-sync';
 import { PrismaCompanyRepository } from '@/infra/db/prisma/company.repository';
 import { NFEIOService } from '@/infra/nfeio/nfeio.service';
 import { ViaCepService } from '@/infra/cep/viacep-service';
 
+export function makeNfeioCompanySync() {
+  return new NfeioCompanySync(new PrismaCompanyRepository(), new NFEIOService(), new ViaCepService());
+}
+
 export function makeCreateCompanyUseCase() {
-  const companyRepository = new PrismaCompanyRepository();
-  const nfeioService = new NFEIOService();
-  const cepService = new ViaCepService();
-  return new DbCreateCompany(companyRepository, nfeioService, cepService);
+  return new DbCreateCompany(new PrismaCompanyRepository(), makeNfeioCompanySync());
 }
 
 export function makeListCompaniesUseCase() {
-  const companyRepository = new PrismaCompanyRepository();
-  const nfeioService = new NFEIOService();
-  return new DbListCompanies(companyRepository, nfeioService);
+  return new DbListCompanies(new PrismaCompanyRepository(), new NFEIOService());
 }
 
 export function makeUpdateCompanyUseCase() {
-  const companyRepository = new PrismaCompanyRepository();
-  const nfeioService = new NFEIOService();
-  return new DbUpdateCompany(companyRepository, nfeioService);
+  return new DbUpdateCompany(new PrismaCompanyRepository(), makeNfeioCompanySync());
 }
 
 export function makeDeleteCompanyUseCase() {
-  const companyRepository = new PrismaCompanyRepository();
-  const nfeioService = new NFEIOService();
-  return new DbDeleteCompany(companyRepository, nfeioService);
+  return new DbDeleteCompany(new PrismaCompanyRepository(), new NFEIOService());
 }
 
 export function makeUploadCertificateUseCase() {
-  const companyRepository = new PrismaCompanyRepository();
-  const nfeioService = new NFEIOService();
-  return new DbUploadCertificate(companyRepository, nfeioService);
+  return new DbUploadCertificate(new PrismaCompanyRepository(), new NFEIOService(), makeNfeioCompanySync());
+}
+
+export function makeSyncCompanyUseCase() {
+  return new DbSyncCompany(new PrismaCompanyRepository(), makeNfeioCompanySync());
 }

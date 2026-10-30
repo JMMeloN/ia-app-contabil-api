@@ -8,6 +8,7 @@ import {
   makeUpdateCompanyUseCase,
   makeDeleteCompanyUseCase,
   makeUploadCertificateUseCase,
+  makeSyncCompanyUseCase,
 } from '@/main/factories/company.factory';
 
 const router = Router();
@@ -150,6 +151,17 @@ router.delete('/:id', async (req: AuthRequest, res: Response) => {
     });
 
     return res.status(204).send();
+  } catch (error: any) {
+    return res.status(400).json({ error: error.message });
+  }
+});
+
+// POST /companies/:id/sync - Vincula (ou revincula) a empresa à NFe.io
+router.post('/:id/sync', async (req: AuthRequest, res: Response) => {
+  try {
+    const id = getSingleParam(req.params.id);
+    const company = await makeSyncCompanyUseCase().execute({ id, userId: req.user!.userId });
+    return res.status(200).json(company);
   } catch (error: any) {
     return res.status(400).json({ error: error.message });
   }

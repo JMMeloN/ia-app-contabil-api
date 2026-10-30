@@ -1,5 +1,15 @@
 export type RequestStatus = 'PENDENTE' | 'PROCESSANDO' | 'PROCESSADA' | 'FALHA' | 'CANCELADA';
 
+export type TaxationType =
+  | 'None'
+  | 'WithinCity'
+  | 'OutsideCity'
+  | 'Export'
+  | 'Free'
+  | 'Immune'
+  | 'SuspendedCourtDecision'
+  | 'SuspendedAdministrativeProcedure';
+
 export interface RequestModel {
   id: string;
   valor: number;
@@ -7,6 +17,18 @@ export interface RequestModel {
   observacoes?: string | null;
   cnaeCode?: string | null;
   issRate?: number | null;
+  federalServiceCode?: string | null;
+  taxationType?: string | null;
+  issWithheld?: boolean;
+  issAmountWithheld?: number | null;
+  deductionsAmount?: number | null;
+  unconditionedDiscountAmount?: number | null;
+  conditionedDiscountAmount?: number | null;
+  irAmountWithheld?: number | null;
+  pisAmountWithheld?: number | null;
+  cofinsAmountWithheld?: number | null;
+  csllAmountWithheld?: number | null;
+  inssAmountWithheld?: number | null;
   status: RequestStatus;
   arquivoUrl?: string | null;
   xmlUrl?: string | null;

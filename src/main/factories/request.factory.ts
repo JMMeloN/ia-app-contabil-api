@@ -9,6 +9,7 @@ import { DbEmitInvoice } from '@/data/usecases/request/db-emit-invoice.usecase';
 import { PrismaRequestRepository } from '@/infra/db/prisma/request.repository';
 import { PrismaCompanyRepository } from '@/infra/db/prisma/company.repository';
 import { PrismaUserRepository } from '@/infra/db/prisma/user.repository';
+import { makeNfeioCompanySync } from '@/main/factories/company.factory';
 import { PrismaPayerRepository } from '@/infra/db/prisma/payer.repository';
 import { EmailServiceFactory } from '@/main/factories/email/email-service-factory';
 import { NFEIOService } from '@/infra/nfeio/nfeio.service';
@@ -26,7 +27,8 @@ export function makeCreateRequestUseCase() {
     userRepository,
     emailService,
     nfeioService,
-    payerRepository
+    payerRepository,
+    makeNfeioCompanySync()
   );
 }
 

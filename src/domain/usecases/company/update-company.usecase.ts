@@ -2,6 +2,7 @@ import { CompanyModel } from '@/domain/models/company.model';
 
 export interface UpdateCompanyDTO {
   id: string;
+  userId: string;
   nome?: string;
   cnpj?: string;
   email?: string;
@@ -10,11 +11,23 @@ export interface UpdateCompanyDTO {
   cidade?: string;
   estado?: string;
   cep?: string;
-  userId: string;
-  // Campos opcionais para integração NFe.io
+  nomeFantasia?: string;
+  dataAbertura?: string;
+  regimeTributario?: string;
+  naturezaJuridica?: string;
+  inscricaoMunicipal?: string;
+  inscricaoEstadual?: string;
   cityServiceCode?: string;
-  taxRegime?: string;
-  legalNature?: string;
+  regimeEspecialTributacao?: string;
+  numeroJuntaComercial?: number;
+  rpsSerie?: string;
+  rpsNumero?: number;
+  aliquotaIss?: number;
+  determinacaoImpostoFederal?: string;
+  determinacaoImpostoMunicipal?: string;
+  prefeituraLogin?: string;
+  prefeituraSenha?: string;
+  valorAutorizacao?: string;
 }
 
 export interface UpdateCompanyUseCase {

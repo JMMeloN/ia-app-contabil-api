@@ -60,6 +60,16 @@ export interface NFEIOCompanyResponse {
   modifiedOn: string;
 }
 
+export type NFEIOTaxationType =
+  | 'None'
+  | 'WithinCity'
+  | 'OutsideCity'
+  | 'Export'
+  | 'Free'
+  | 'Immune'
+  | 'SuspendedCourtDecision'
+  | 'SuspendedAdministrativeProcedure';
+
 export interface NFEIOServiceInvoiceInput {
   companyId: string;
   externalId?: string;
@@ -69,18 +79,39 @@ export interface NFEIOServiceInvoiceInput {
   issRate?: number;
   description: string;
   servicesAmount: number;
+  issuedOn?: string;
+  taxationType?: NFEIOTaxationType;
+  deductionsAmount?: number;
+  discountUnconditionedAmount?: number;
+  discountConditionedAmount?: number;
+  issAmountWithheld?: number;
+  irAmountWithheld?: number;
+  pisAmountWithheld?: number;
+  cofinsAmountWithheld?: number;
+  csllAmountWithheld?: number;
+  inssAmountWithheld?: number;
+  othersAmountWithheld?: number;
   borrower: {
     type: 'LegalEntity' | 'NaturalPerson';
     federalTaxNumber: number;
     name: string;
     email: string;
+    /** Inscrição Municipal do tomador (only accepted field besides CNPJ on the invoice) */
+    municipalTaxNumber?: string;
+    phoneNumber?: string;
   };
 }
 
 export interface NFEIOPersonInput {
   federalTaxNumber: string | number;
   name: string;
+  tradeName?: string;
   email: string;
+  phoneNumber?: string;
+  /** Inscrição Municipal (legal people only) */
+  municipalTaxNumber?: string;
+  /** Inscrição Estadual (legal people only) */
+  regionalTaxNumber?: number;
   address: {
     country?: string;
     postalCode?: string;

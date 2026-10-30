@@ -69,9 +69,22 @@ export class DbEmitInvoice implements EmitInvoiceUseCase {
       invoice = await this.nfeioService.emitServiceInvoice({
         companyId: company.nfeioCompanyId,
         cityServiceCode: data.cityServiceCode || company.cityServiceCode || '0',
+        federalServiceCode: request.federalServiceCode || undefined,
         cnaeCode: data.cnaeCode || request.cnaeCode || undefined,
+        issRate: request.issRate ?? undefined,
         description: request.observacoes || 'Serviços prestados',
         servicesAmount: request.valor,
+        issuedOn: request.dataEmissao ? new Date(request.dataEmissao).toISOString() : undefined,
+        taxationType: (request.taxationType as any) || undefined,
+        deductionsAmount: request.deductionsAmount ?? undefined,
+        discountUnconditionedAmount: request.unconditionedDiscountAmount ?? undefined,
+        discountConditionedAmount: request.conditionedDiscountAmount ?? undefined,
+        issAmountWithheld: request.issAmountWithheld ?? undefined,
+        irAmountWithheld: request.irAmountWithheld ?? undefined,
+        pisAmountWithheld: request.pisAmountWithheld ?? undefined,
+        cofinsAmountWithheld: request.cofinsAmountWithheld ?? undefined,
+        csllAmountWithheld: request.csllAmountWithheld ?? undefined,
+        inssAmountWithheld: request.inssAmountWithheld ?? undefined,
         borrower,
       });
 

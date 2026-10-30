@@ -8,6 +8,7 @@ import { NFEIOService } from '@/infra/nfeio/nfeio.service';
 import { notaProcessadaEmailTemplate } from '@/infra/email/templates/nota-processada-email';
 import { PayerRepository } from '@/data/protocols/payer.repository';
 import { resolveBorrower } from './payer-resolver';
+import { NfeioCompanySync } from '@/data/usecases/company/nfeio-company-sync';
 import { resolveInvoiceFileUrl } from './invoice-url-resolver';
 import axios from 'axios';
 import { randomUUID } from 'crypto';
@@ -19,12 +20,13 @@ export class DbCreateRequest implements CreateRequestUseCase {
     private readonly userRepository: UserRepository,
     private readonly emailService: EmailService,
     private readonly nfeioService: NFEIOService,
-    private readonly payerRepository: PayerRepository
+    private readonly payerRepository: PayerRepository,
+    private readonly nfeioSync?: NfeioCompanySync
   ) {}
 
   async execute(data: CreateRequestDTO): Promise<RequestModel> {
     // Verificar se a empresa existe e pertence ao usuário
-    const company = await this.companyRepository.findById(data.companyId);
+    let company = await this.companyRepository.findById(data.companyId);
     if (!company) {
       throw new Error('Empresa não encontrada');
     }
@@ -48,6 +50,10 @@ export class DbCreateRequest implements CreateRequestUseCase {
       throw new Error('Tomador inválido para esta empresa');
     }
 
+    if (!company.nfeioCompanyId && this.nfeioSync) {
+      // Link on demand: the background link may have failed or not finished yet.
+      company = await this.nfeioSync.ensureLinked(company);
+    }
     if (!company.nfeioCompanyId) {
       throw new Error('Empresa não vinculada ao NFe.io.');
     }
@@ -67,6 +73,17 @@ export class DbCreateRequest implements CreateRequestUseCase {
       tomadorEmail: data.tomadorEmail,
     });
 
+    // Base de cálculo do ISS: valor - deduções - desconto incondicionado
+    const baseTaxAmount =
+      data.valor - (data.deductionsAmount ?? 0) - (data.unconditionedDiscountAmount ?? 0);
+    if (baseTaxAmount <= 0) {
+      throw new Error('Deduções e descontos não podem ser maiores ou iguais ao valor do serviço.');
+    }
+
+    const issAmountWithheld = data.issWithheld
+      ? Math.round(baseTaxAmount * data.issRate) / 100
+      : undefined;
+
     // Criar solicitação no banco local
     const request = await this.requestRepository.create({
       valor: data.valor,
@@ -74,6 +91,18 @@ export class DbCreateRequest implements CreateRequestUseCase {
       observacoes: data.observacoes,
       cnaeCode: data.cnaeCode,
       issRate: data.issRate,
+      federalServiceCode: data.federalServiceCode,
+      taxationType: data.taxationType,
+      issWithheld: data.issWithheld ?? false,
+      issAmountWithheld,
+      deductionsAmount: data.deductionsAmount,
+      unconditionedDiscountAmount: data.unconditionedDiscountAmount,
+      conditionedDiscountAmount: data.conditionedDiscountAmount,
+      irAmountWithheld: data.irAmountWithheld,
+      pisAmountWithheld: data.pisAmountWithheld,
+      cofinsAmountWithheld: data.cofinsAmountWithheld,
+      csllAmountWithheld: data.csllAmountWithheld,
+      inssAmountWithheld: data.inssAmountWithheld,
       userId: data.userId,
       companyId: data.companyId,
       payerId: payer.id,
@@ -91,10 +120,22 @@ export class DbCreateRequest implements CreateRequestUseCase {
       const invoice = await this.nfeioService.emitServiceInvoice({
         companyId: company.nfeioCompanyId,
         cityServiceCode: company.cityServiceCode,
+        federalServiceCode: data.federalServiceCode,
         cnaeCode: data.cnaeCode,
         issRate: data.issRate,
         description: data.observacoes || 'Serviços prestados',
         servicesAmount: data.valor,
+        issuedOn: data.dataEmissao.toISOString(),
+        taxationType: data.taxationType,
+        deductionsAmount: data.deductionsAmount,
+        discountUnconditionedAmount: data.unconditionedDiscountAmount,
+        discountConditionedAmount: data.conditionedDiscountAmount,
+        issAmountWithheld,
+        irAmountWithheld: data.irAmountWithheld,
+        pisAmountWithheld: data.pisAmountWithheld,
+        cofinsAmountWithheld: data.cofinsAmountWithheld,
+        csllAmountWithheld: data.csllAmountWithheld,
+        inssAmountWithheld: data.inssAmountWithheld,
         borrower,
       });
 

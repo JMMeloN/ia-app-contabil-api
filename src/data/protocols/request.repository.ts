@@ -1,4 +1,4 @@
-import { RequestModel, RequestStatus } from '@/domain/models/request.model';
+import { RequestModel, RequestStatus, TaxationType } from '@/domain/models/request.model';
 
 export interface CreateRequestData {
   valor: number;
@@ -6,6 +6,18 @@ export interface CreateRequestData {
   observacoes?: string;
   cnaeCode?: string;
   issRate?: number;
+  federalServiceCode?: string;
+  taxationType?: TaxationType;
+  issWithheld?: boolean;
+  issAmountWithheld?: number;
+  deductionsAmount?: number;
+  unconditionedDiscountAmount?: number;
+  conditionedDiscountAmount?: number;
+  irAmountWithheld?: number;
+  pisAmountWithheld?: number;
+  cofinsAmountWithheld?: number;
+  csllAmountWithheld?: number;
+  inssAmountWithheld?: number;
   userId: string;
   companyId: string;
   payerId: string;

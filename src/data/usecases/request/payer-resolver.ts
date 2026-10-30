@@ -7,6 +7,8 @@ interface Borrower {
   federalTaxNumber: number;
   name: string;
   email: string;
+  municipalTaxNumber?: string;
+  phoneNumber?: string;
 }
 
 function sanitizeDocument(document: string): string {
@@ -47,17 +49,24 @@ export function resolveBorrower(
     return fallbackBorrowerFromCompany(company);
   }
 
-  return {
-    type:
-      data.payer?.type === 'NATURAL_PERSON'
-        ? 'NaturalPerson'
-        : data.payer?.type === 'LEGAL_ENTITY'
+  const type: Borrower['type'] =
+    data.payer?.type === 'NATURAL_PERSON'
+      ? 'NaturalPerson'
+      : data.payer?.type === 'LEGAL_ENTITY'
+        ? 'LegalEntity'
+        : digits.length > 11
           ? 'LegalEntity'
-          : digits.length > 11
-            ? 'LegalEntity'
-            : 'NaturalPerson',
+          : 'NaturalPerson';
+
+  return {
+    type,
     federalTaxNumber: Number(digits),
     name: sourceName,
     email: sourceEmail || company.email,
+    municipalTaxNumber:
+      type === 'LegalEntity' && data.payer?.municipalTaxNumber
+        ? data.payer.municipalTaxNumber
+        : undefined,
+    phoneNumber: data.payer?.phone || undefined,
   };
 }

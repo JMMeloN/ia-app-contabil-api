@@ -67,6 +67,11 @@ const corsOptions: CorsOptions = {
 app.use(helmet());
 app.use(cors(corsOptions));
 app.use(express.json({ limit: '1mb' }));
+
+// Prisma returns BigInt for company_registry_number / rps_number; JSON.stringify cannot handle it.
+(BigInt.prototype as any).toJSON = function toJSON() {
+  return Number(this);
+};
 app.use(generalRateLimiter);
 app.use('/files', express.static('uploads'));
 
